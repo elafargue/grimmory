@@ -99,9 +99,9 @@ describe('MetadataPickerComponent', () => {
     const component = TestBed.runInInjectionContext(() => new MetadataPickerComponent());
     TestBed.flushEffects();
 
-    expect(component.metadataProviderFields().map(field => field.controlName)).toContain('googleId');
-    expect(component.metadataProviderFields().map(field => field.controlName)).toContain('audibleId');
-    expect(component.metadataProviderFields().map(field => field.controlName)).not.toContain('amazonRating');
+    expect(component.metadataProviderFields().map(field => field.name)).toContain('googleId');
+    expect(component.metadataProviderFields().map(field => field.name)).toContain('audibleId');
+    expect(component.metadataProviderFields().map(field => field.name)).not.toContain('amazonRating');
   });
 
   it('patches book metadata into the form and resets review state when a new book arrives', () => {
@@ -168,7 +168,7 @@ describe('MetadataPickerComponent', () => {
     expect(messageAdd).toHaveBeenCalledWith({
       severity: 'warn',
       summary: 'Action Blocked',
-      detail: 'title is locked and cannot be updated.',
+      detail: 'The Title field is locked and cannot be updated.',
     });
 
     component.metadataForm.get('titleLocked')?.setValue(false);
@@ -181,12 +181,12 @@ describe('MetadataPickerComponent', () => {
     expect(component.metadataForm.get('audiobookThumbnailUrl')?.value).toBe('https://covers.example/audiobook.jpg');
     expect(component.isValueCopied('audiobookThumbnailUrl')).toBe(true);
 
-    component.metadataForm.get('comicIssueNumberLocked')?.setValue(true);
-    component.copyFetchedToCurrent('comicIssueNumber');
+    component.metadataForm.get('issueNumberLocked')?.setValue(true);
+    component.copyFetchedToCurrent('issueNumber');
     expect(messageAdd).toHaveBeenLastCalledWith({
       severity: 'warn',
       summary: 'Action Blocked',
-      detail: 'Issue # is locked and cannot be updated.',
+      detail: 'The Issue Number field is locked and cannot be updated.',
     });
 
     component.resetField('title');
@@ -295,8 +295,8 @@ describe('MetadataPickerComponent', () => {
     component.book = createBook();
 
     expect(component.getFetchedComicValue('issueNumber')).toBe('7');
-    expect(component.hasAnyFetchedComicData()).toBe(true);
-    expect(component.hasAnyCurrentComicData()).toBe(true);
+    expect(component.hasComicData(component.fetchedMetadata.comicMetadata)).toBe(true);
+    expect(component.hasComicData(component.book?.metadata?.comicMetadata)).toBe(true);
     expect(component.shouldShowComicSection()).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import {Directive, inject, input} from '@angular/core';
+import {Directive, effect, inject, input} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AutoComplete} from '@openng/optimus-ui/autocomplete';
 import {QueryClient} from '@tanstack/angular-query-experimental';
@@ -15,16 +15,24 @@ export class FacetSuggestionsDirective {
   private readonly autoComplete = inject(AutoComplete);
   private readonly bookQuery = inject(BookQueryService);
   private readonly queryClient = inject(QueryClient);
-  readonly facet = input.required<BookQueryFacetKey>({alias: 'appFacetSuggestions'});
+  readonly facet = input.required<BookQueryFacetKey | undefined>({alias: 'appFacetSuggestions'});
 
   constructor() {
     this.autoComplete.delay = SEARCH_DEBOUNCE_MS;
 
+    effect(() => {
+      this.autoComplete.typeahead = this.facet() !== undefined;
+    });
+
     this.autoComplete.completeMethod.pipe(
-      switchMap(({query}) => from(this.queryClient.query(this.bookQuery.facet(this.facet(), ALL_BOOKS, query))).pipe(
-        map(group => group.values.map(({value}) => value)),
-        catchError(() => of([])),
-      )),
+      switchMap(({query}) => {
+        const facet = this.facet();
+        if (facet === undefined) return of([]);
+        return from(this.queryClient.query(this.bookQuery.facet(facet, ALL_BOOKS, query))).pipe(
+          map(group => group.values.map(({value}) => value)),
+          catchError(() => of([])),
+        );
+      }),
       takeUntilDestroyed(),
     ).subscribe(values => this.autoComplete.suggestions = values);
   }

@@ -519,10 +519,10 @@
       "count": 1
     },
     "anti-slop/require-safety-comment-for-type-assertion": {
-      "count": 5
+      "count": 3
     },
     "typescript/no-unnecessary-condition": {
-      "count": 6
+      "count": 5
     },
     "typescript/no-unsafe-assignment": {
       "count": 5
@@ -683,17 +683,14 @@
     "anti-slop/no-unknown-parameters": {
       "count": 1
     },
-    "anti-slop/no-unsafe-dictionary-type": {
-      "count": 3
-    },
     "anti-slop/require-safety-comment-for-type-assertion": {
-      "count": 16
+      "count": 11
     },
     "typescript/no-unnecessary-condition": {
-      "count": 9
+      "count": 8
     },
     "typescript/no-unsafe-assignment": {
-      "count": 58
+      "count": 8
     },
     "typescript/no-unsafe-call": {
       "count": 2
@@ -704,31 +701,25 @@
   },
   "src/app/features/metadata/component/book-metadata-center/metadata-picker/metadata-picker.component.ts": {
     "anti-slop/no-unknown-returns": {
-      "count": 2
+      "count": 1
     },
     "anti-slop/no-unsafe-dictionary-type": {
       "count": 3
     },
     "anti-slop/require-safety-comment-for-type-assertion": {
-      "count": 48
+      "count": 15
     },
     "typescript/no-unnecessary-condition": {
-      "count": 27
-    },
-    "typescript/no-unsafe-argument": {
-      "count": 1
+      "count": 18
     },
     "typescript/no-unsafe-assignment": {
-      "count": 18
+      "count": 12
     },
     "typescript/no-unsafe-call": {
       "count": 3
     },
     "typescript/no-unsafe-member-access": {
       "count": 3
-    },
-    "typescript/no-unsafe-return": {
-      "count": 1
     }
   },
   "src/app/features/metadata/component/book-metadata-center/metadata-viewer/metadata-tabs/metadata-tabs.component.ts": {
@@ -1831,14 +1822,6 @@
     },
     "typescript/no-unsafe-member-access": {
       "count": 3
-    }
-  },
-  "src/app/shared/metadata/metadata-form.builder.ts": {
-    "anti-slop/no-known-value-widening": {
-      "count": 4
-    },
-    "anti-slop/no-unknown-returns": {
-      "count": 1
     }
   },
   "src/app/shared/metadata/metadata-provider-fields.ts": {

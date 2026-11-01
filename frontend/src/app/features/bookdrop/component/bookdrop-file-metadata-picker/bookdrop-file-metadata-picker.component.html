@@ -87,87 +87,11 @@
             </div>
           </div>
         </div>
-        @for (field of metadataFieldsTop; track field) {
-          <div class="meta-row field-{{field.controlName}}">
-            <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
+        @for (field of pickerFields(); track field.name) {
+          <div class="meta-row field-{{field.name}}">
+            <label for="{{field.name}}" class="field-label">{{ fieldLabels.label(field.name) }}</label>
             <div class="meta-fields">
-              <input
-                pSize="small"
-                fluid
-                pInputText
-                id="{{field.controlName}}"
-                formControlName="{{field.controlName}}"
-                class="dest"
-                [class.changed]="isValueChanged(field.controlName)"
-              />
-              <p-button
-                size="small"
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
-                [outlined]="true"
-                [class.nosrc]="!fetchedMetadata[field.fetchedKey]"
-                class="arrow-button"
-                [severity]="isValueChanged(field.controlName) ? 'warn' : null"
-                [disabled]="!isFetchedDifferent(field.controlName) && !isValueChanged(field.controlName)"
-                (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-              />
-              @if (fetchedMetadata[field.fetchedKey]) {
-                <input
-                  pSize="small"
-                  pInputText
-                  [value]="fetchedMetadata[field.fetchedKey] ?? null"
-                  class="src"
-                  disabled
-                  [class.diff]="isFetchedDifferent(field.controlName)"
-                />
-              }
-            </div>
-          </div>
-        }
-        @for (field of metadataPublishDate; track field) {
-          <div class="meta-row field-{{field.controlName}}">
-            <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
-            <div class="meta-fields">
-              <p-datepicker
-                size="small"
-                fluid
-                inputId="{{field.controlName}}"
-                formControlName="{{field.controlName}}"
-                dataType="string"
-                dateFormat="yy-mm-dd"
-                [keepInvalid]="true"
-                [showIcon]="true"
-                [iconDisplay]="'input'"
-                appendTo="body"
-                class="dest"
-                [class.changed]="isValueChanged(field.controlName)" />
-              <p-button
-                size="small"
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
-                [outlined]="true"
-                [class.nosrc]="!fetchedMetadata[field.fetchedKey]"
-                class="arrow-button"
-                [severity]="isValueChanged(field.controlName) ? 'warn' : null"
-                [disabled]="!isFetchedDifferent(field.controlName) && !isValueChanged(field.controlName)"
-                (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-              />
-              @if (fetchedMetadata[field.fetchedKey]) {
-                <input
-                  pSize="small"
-                  pInputText
-                  [value]="fetchedMetadata[field.fetchedKey] ?? null"
-                  class="src"
-                  disabled
-                  [class.diff]="isFetchedDifferent(field.controlName)"
-                />
-              }
-            </div>
-          </div>
-        }
-        @for (field of metadataChips; track field) {
-          <div class="meta-row field-{{field.controlName}}">
-            <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
-            <div class="meta-fields">
-              @if (field.controlName === 'authors') {
+              @if (field.name === 'authors') {
                 <div class="author-chips-container dest full-width"
                      cdkDropList cdkDropListOrientation="mixed"
                      (cdkDropListDropped)="dropAuthor($event)"
@@ -189,6 +113,7 @@
                     [(ngModel)]="authorInputValue"
                     [ngModelOptions]="{ standalone: true }"
                     size="small"
+                    [appFacetSuggestions]="field.suggestions"
                     [forceSelection]="false"
                     [dropdown]="false"
                     (onKeyUp)="onAuthorInputKeyUp($event)"
@@ -196,114 +121,109 @@
                     placeholder="Add author..."
                   />
                 </div>
-              } @else {
+              } @else if (field.valueType === 'array') {
                 <p-autoComplete
                   size="small"
-                  formControlName="{{field.controlName}}"
+                  [formControlName]="field.name"
                   [multiple]="true"
-                  [typeahead]="false"
+                  [appFacetSuggestions]="field.suggestions"
                   [dropdown]="false"
                   [forceSelection]="false"
                   class="dest full-width"
-                  [class.changed]="isValueChanged(field.controlName)"
-                  (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
+                  [class.changed]="isValueChanged(field.name)"
+                  (onKeyUp)="onAutoCompleteKeyUp(field.name, $event)"
+                  (onBlur)="addTypedValue(field.name, $event)"
                 />
-              }
-              <p-button
-                size="small"
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
-                [outlined]="true"
-                [class.nosrc]="!fetchedMetadata[field.fetchedKey]"
-                class="arrow-button"
-                [severity]="isValueChanged(field.controlName) ? 'warn' : null"
-                [disabled]="!isFetchedDifferent(field.controlName) && !isValueChanged(field.controlName)"
-                (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-              />
-              @if (fetchedMetadata[field.fetchedKey]) {
-                <p-autoComplete
-                  size="small"
-                  [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
-                  [ngModelOptions]="{standalone:true}"
-                  [disabled]="true"
-                  [multiple]="true"
-                  [typeahead]="false"
-                  [dropdown]="false"
-                  [forceSelection]="false"
-                  class="src full-width"
-                  [class.diff]="isFetchedDifferent(field.controlName)"
-                />
-              }
-            </div>
-          </div>
-        }
-        @for (field of metadataDescription; track field) {
-          <div class="meta-row field-{{field.controlName}}">
-            <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
-            <div class="meta-fields">
-              <textarea
-                pTextarea
-                rows="4"
-                pSize="small"
-                id="{{field.controlName}}"
-                formControlName="{{field.controlName}}"
-                class="dest"
-                [class.changed]="isValueChanged(field.controlName)"
-              ></textarea>
-              <p-button
-                size="small"
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
-                [outlined]="true"
-                [class.nosrc]="!fetchedMetadata[field.fetchedKey]"
-                class="arrow-button"
-                [severity]="isValueChanged(field.controlName) ? 'warn' : null"
-                [disabled]="!isFetchedDifferent(field.controlName) && !isValueChanged(field.controlName)"
-                (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-              />
-              @if (fetchedMetadata[field.fetchedKey]) {
+              } @else if (field.valueType === 'text') {
                 <textarea
                   pTextarea
                   rows="4"
                   pSize="small"
-                  [value]="fetchedMetadata[field.fetchedKey] ?? null"
-                  class="src"
-                  disabled
-                  [class.diff]="isFetchedDifferent(field.controlName)"
+                  [id]="field.name"
+                  [formControlName]="field.name"
+                  class="dest"
+                  [class.changed]="isValueChanged(field.name)"
                 ></textarea>
+              } @else if (field.valueType === 'date') {
+                <p-datepicker
+                  size="small"
+                  fluid
+                  [inputId]="field.name"
+                  [formControlName]="field.name"
+                  dataType="string"
+                  dateFormat="yy-mm-dd"
+                  [keepInvalid]="true"
+                  [showIcon]="true"
+                  [iconDisplay]="'input'"
+                  appendTo="body"
+                  class="dest"
+                  [class.changed]="isValueChanged(field.name)" />
+              } @else if (field.suggestions) {
+                <p-autoComplete
+                  size="small"
+                  fluid
+                  [inputId]="field.name"
+                  [formControlName]="field.name"
+                  [dropdown]="false"
+                  [forceSelection]="false"
+                  [appFacetSuggestions]="field.suggestions"
+                  class="dest"
+                  [class.changed]="isValueChanged(field.name)"
+                />
+              } @else {
+                <input
+                  pSize="small"
+                  pInputText
+                  [id]="field.name"
+                  [formControlName]="field.name"
+                  class="dest"
+                  [class.changed]="isValueChanged(field.name)"
+                />
               }
-            </div>
-          </div>
-        }
-        @for (field of metadataFieldsBottom(); track field) {
-          <div class="meta-row field-{{field.controlName}}">
-            <label for="{{field.controlName}}" class="field-label">{{ fieldLabel(field) }}</label>
-            <div class="meta-fields">
-              <input
-                pInputText
-                pSize="small"
-                id="{{field.controlName}}"
-                formControlName="{{field.controlName}}"
-                class="dest"
-                [class.changed]="isValueChanged(field.controlName)"
-              />
               <p-button
                 size="small"
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
+                [icon]="isValueSaved(field.name) ? 'pi pi-check' : (isValueChanged(field.name) || !fetchedMetadata[field.name] ? 'pi pi-refresh' : 'pi pi-angle-left')"
                 [outlined]="true"
-                [class.nosrc]="!fetchedMetadata[field.fetchedKey]"
+                [class.nosrc]="!fetchedMetadata[field.name]"
                 class="arrow-button"
-                [severity]="isValueChanged(field.controlName) ? 'warn' : null"
-                [disabled]="!isFetchedDifferent(field.controlName) && !isValueChanged(field.controlName)"
-                (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+                [severity]="isValueChanged(field.name) ? 'warn' : null"
+                [disabled]="!isFetchedDifferent(field.name) && !isValueChanged(field.name)"
+                (click)="isValueChanged(field.name) ? resetField(field.name) : copyFetchedToCurrent(field.name)"
               />
-              @if (fetchedMetadata[field.fetchedKey]) {
-                <input
-                  pInputText
-                  pSize="small"
-                  [value]="fetchedMetadata[field.fetchedKey] ?? null"
-                  class="src"
-                  disabled
-                  [class.diff]="isFetchedDifferent(field.controlName)"
-                />
+              @if (fetchedMetadata[field.name]) {
+                @if (field.valueType === 'array') {
+                  <p-autoComplete
+                    size="small"
+                    [ngModel]="fetchedMetadata[field.name] ?? []"
+                    [ngModelOptions]="{standalone:true}"
+                    [disabled]="true"
+                    [multiple]="true"
+                    [typeahead]="false"
+                    [dropdown]="false"
+                    [forceSelection]="false"
+                    class="src full-width"
+                    [class.diff]="isFetchedDifferent(field.name)"
+                  />
+                } @else if (field.valueType === 'text') {
+                  <textarea
+                    pTextarea
+                    rows="4"
+                    pSize="small"
+                    [value]="fetchedMetadata[field.name] ?? null"
+                    class="src"
+                    disabled
+                    [class.diff]="isFetchedDifferent(field.name)"
+                  ></textarea>
+                } @else {
+                  <input
+                    pSize="small"
+                    pInputText
+                    [value]="fetchedMetadata[field.name] ?? null"
+                    class="src"
+                    disabled
+                    [class.diff]="isFetchedDifferent(field.name)"
+                  />
+                }
               }
             </div>
           </div>
@@ -340,66 +260,11 @@
           </div>
         </div>
         <div class="metacontent editor-metacontent">
-          @for (field of metadataFieldsTop; track field) {
-            <div class="meta-row field-{{field.controlName}}" [class.field-series-name]="field.controlName === 'seriesName'">
-              <label for="{{field.controlName}}" class="field-label field-label-fixed">{{ field.label }}</label>
+          @for (field of pickerFields(); track field.name) {
+            <div class="meta-row field-{{field.name}}" [class.field-series-name]="field.name === 'seriesName'">
+              <label for="{{field.name}}" class="field-label field-label-fixed">{{ fieldLabels.label(field.name) }}</label>
               <div class="field-input-row">
-                <input
-                  pSize="small"
-                  fluid
-                  pInputText
-                  id="{{field.controlName}}"
-                  formControlName="{{field.controlName}}"
-                  [class.changed]="isValueChanged(field.controlName)"
-                />
-                <p-button
-                  size="small"
-                  icon="pi pi-refresh"
-                  [outlined]="true"
-                  class="arrow-button"
-                  severity="warn"
-                  [disabled]="!isValueChanged(field.controlName)"
-                  (click)="resetField(field.controlName)"
-                />
-              </div>
-            </div>
-          }
-
-          @for (field of metadataPublishDate; track field) {
-            <div class="meta-row field-{{field.controlName}}" [class.field-series-name]="field.controlName === 'seriesName'">
-              <label for="{{field.controlName}}" class="field-label field-label-fixed">{{ field.label }}</label>
-              <div class="field-input-row">
-                <p-datepicker
-                  size="small"
-                  fluid
-                  inputId="{{field.controlName}}"
-                  formControlName="{{field.controlName}}"
-                  dataType="string"
-                  dateFormat="yy-mm-dd"
-                  [keepInvalid]="true"
-                  [showIcon]="true"
-                  [iconDisplay]="'input'"
-                  appendTo="body"
-                  class="full-width"
-                  [class.changed]="isValueChanged(field.controlName)" />
-                <p-button
-                  size="small"
-                  icon="pi pi-refresh"
-                  [outlined]="true"
-                  class="arrow-button"
-                  severity="warn"
-                  [disabled]="!isValueChanged(field.controlName)"
-                  (click)="resetField(field.controlName)"
-                />
-              </div>
-            </div>
-          }
-
-          @for (field of metadataChips; track field) {
-            <div class="meta-row field-{{field.controlName}}" [class.field-series-name]="field.controlName === 'seriesName'">
-              <label for="{{field.controlName}}" class="field-label field-label-fixed">{{ field.label }}</label>
-              <div class="field-input-row">
-                @if (field.controlName === 'authors') {
+                @if (field.name === 'authors') {
                   <div class="author-chips-container full-width"
                        cdkDropList cdkDropListOrientation="mixed"
                        (cdkDropListDropped)="dropAuthor($event)"
@@ -421,6 +286,7 @@
                       [(ngModel)]="authorInputValue"
                       [ngModelOptions]="{ standalone: true }"
                       size="small"
+                      [appFacetSuggestions]="field.suggestions"
                       [forceSelection]="false"
                       [dropdown]="false"
                       (onKeyUp)="onAuthorInputKeyUp($event)"
@@ -428,17 +294,62 @@
                       placeholder="Add author..."
                     />
                   </div>
-                } @else {
+                } @else if (field.valueType === 'array') {
                   <p-autoComplete
                     size="small"
-                    formControlName="{{field.controlName}}"
+                    [formControlName]="field.name"
                     [multiple]="true"
-                    [typeahead]="false"
+                    [appFacetSuggestions]="field.suggestions"
                     [dropdown]="false"
                     [forceSelection]="false"
                     class="full-width"
-                    [class.changed]="isValueChanged(field.controlName)"
-                    (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
+                    [class.changed]="isValueChanged(field.name)"
+                    (onKeyUp)="onAutoCompleteKeyUp(field.name, $event)"
+                    (onBlur)="addTypedValue(field.name, $event)"
+                  />
+                } @else if (field.valueType === 'text') {
+                  <textarea
+                    pTextarea
+                    fluid
+                    rows="4"
+                    pSize="small"
+                    [id]="field.name"
+                    [formControlName]="field.name"
+                    [class.changed]="isValueChanged(field.name)"
+                  ></textarea>
+                } @else if (field.valueType === 'date') {
+                  <p-datepicker
+                    size="small"
+                    fluid
+                    [inputId]="field.name"
+                    [formControlName]="field.name"
+                    dataType="string"
+                    dateFormat="yy-mm-dd"
+                    [keepInvalid]="true"
+                    [showIcon]="true"
+                    [iconDisplay]="'input'"
+                    appendTo="body"
+                    class="full-width"
+                    [class.changed]="isValueChanged(field.name)" />
+                } @else if (field.suggestions) {
+                  <p-autoComplete
+                    size="small"
+                    fluid
+                    [inputId]="field.name"
+                    [formControlName]="field.name"
+                    [dropdown]="false"
+                    [forceSelection]="false"
+                    [appFacetSuggestions]="field.suggestions"
+                    [class.changed]="isValueChanged(field.name)"
+                  />
+                } @else {
+                  <input
+                    pSize="small"
+                    fluid
+                    pInputText
+                    [id]="field.name"
+                    [formControlName]="field.name"
+                    [class.changed]="isValueChanged(field.name)"
                   />
                 }
                 <p-button
@@ -447,59 +358,8 @@
                   [outlined]="true"
                   class="arrow-button"
                   severity="warn"
-                  [disabled]="!isValueChanged(field.controlName)"
-                  (click)="resetField(field.controlName)"
-                />
-              </div>
-            </div>
-          }
-
-          @for (field of metadataDescription; track field) {
-            <div class="meta-row field-{{field.controlName}}" [class.field-series-name]="field.controlName === 'seriesName'">
-              <label for="{{field.controlName}}" class="field-label field-label-fixed">{{ field.label }}</label>
-              <div class="field-input-row">
-                <textarea
-                  pTextarea
-                  fluid
-                  rows="4"
-                  pSize="small"
-                  id="{{field.controlName}}"
-                  formControlName="{{field.controlName}}"
-                  [class.changed]="isValueChanged(field.controlName)"
-                ></textarea>
-                <p-button
-                  size="small"
-                  icon="pi pi-refresh"
-                  [outlined]="true"
-                  class="arrow-button"
-                  severity="warn"
-                  [disabled]="!isValueChanged(field.controlName)"
-                  (click)="resetField(field.controlName)"
-                />
-              </div>
-            </div>
-          }
-
-          @for (field of metadataFieldsBottom(); track field) {
-            <div class="meta-row field-{{field.controlName}}" [class.field-series-name]="field.controlName === 'seriesName'">
-              <label for="{{field.controlName}}" class="field-label field-label-fixed">{{ fieldLabel(field) }}</label>
-              <div class="field-input-row">
-                <input
-                  pSize="small"
-                  fluid
-                  pInputText
-                  id="{{field.controlName}}"
-                  formControlName="{{field.controlName}}"
-                  [class.changed]="isValueChanged(field.controlName)"
-                />
-                <p-button
-                  size="small"
-                  icon="pi pi-refresh"
-                  [outlined]="true"
-                  class="arrow-button"
-                  severity="warn"
-                  [disabled]="!isValueChanged(field.controlName)"
-                  (click)="resetField(field.controlName)"
+                  [disabled]="!isValueChanged(field.name)"
+                  (click)="resetField(field.name)"
                 />
               </div>
             </div>

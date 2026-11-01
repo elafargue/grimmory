@@ -1,17 +1,14 @@
 import {FormControl, FormGroup} from '@angular/forms';
 import {describe, expect, it} from 'vitest';
 
-import {MetadataFormBuilder} from './metadata-form.builder';
+import {MetadataFormBuilder, readFormValue, toFormValue} from './metadata-form.builder';
+import {BOOK_FIELDS, COMIC_FIELDS} from './metadata-fields';
 
 describe('MetadataFormBuilder', () => {
   const builder = new MetadataFormBuilder();
 
-  it('builds controls with defaults for requested, audiobook, comic, and cover fields', () => {
-    const form = builder.buildForm(true, [
-      {label: 'Title', controlName: 'title', lockedKey: 'titleLocked', fetchedKey: 'title', type: 'string'},
-      {label: 'Authors', controlName: 'authors', lockedKey: 'authorsLocked', fetchedKey: 'authors', type: 'array'},
-      {label: 'Series #', controlName: 'seriesNumber', lockedKey: 'seriesNumberLocked', fetchedKey: 'seriesNumber', type: 'number'},
-    ]);
+  it('builds controls with defaults for the requested fields', () => {
+    const form = builder.buildForm([...BOOK_FIELDS, ...COMIC_FIELDS]);
 
     expect(form.get('title')?.value).toBe('');
     expect(form.get('authors')?.value).toEqual([]);
@@ -19,22 +16,34 @@ describe('MetadataFormBuilder', () => {
     expect(form.get('titleLocked')?.value).toBe(false);
     expect(form.get('narrator')?.value).toBe('');
     expect(form.get('abridged')?.value).toBeNull();
-    expect(form.get('comicIssueNumber')?.value).toBe('');
-    expect(form.get('comicCharacters')?.value).toEqual([]);
-    expect(form.get('thumbnailUrl')?.value).toBe('');
-    expect(form.get('coverLocked')?.value).toBe(false);
-    expect(form.get('audiobookCoverLocked')?.value).toBe(false);
+    expect(form.get('issueNumber')?.value).toBe('');
+    expect(form.get('characters')?.value).toEqual([]);
+    expect(form.get('thumbnailUrl')).toBeNull();
   });
 
-  it('omits locked controls when the caller disables them', () => {
-    const form = builder.buildForm(false, [
-      {label: 'Title', controlName: 'title', lockedKey: 'titleLocked', fetchedKey: 'title', type: 'string'},
-    ]);
+  it('loads list values in the order given', () => {
+    const field = (name: string) => [...BOOK_FIELDS, ...COMIC_FIELDS].find(candidate => candidate.name === name)!;
 
-    expect(form.get('title')).toBeTruthy();
-    expect(form.get('titleLocked')).toBeNull();
-    expect(form.get('coverLocked')).toBeNull();
-    expect(form.get('audiobookCoverLocked')).toBeNull();
+    expect(toFormValue(field('tags'), ['Zed', 'Amy'])).toEqual(['Zed', 'Amy']);
+    expect(toFormValue(field('narrator'), undefined)).toBeNull();
+  });
+
+  it('saves form values as the types the backend stores', () => {
+    const fields = [...BOOK_FIELDS, ...COMIC_FIELDS];
+    const saved = (name: string, value: unknown) => readFormValue(
+      new FormGroup({[name]: new FormControl(value)}),
+      fields.find(candidate => candidate.name === name)!,
+    );
+
+    expect(saved('seriesNumber', '3')).toBe(3);
+    expect(saved('volumeNumber', '')).toBeNull();
+    expect(saved('pageCount', 'abc')).toBeNull();
+    expect(saved('title', '')).toBe('');
+    expect(saved('title', null)).toBeNull();
+    expect(saved('abridged', true)).toBe(true);
+    expect(saved('abridged', null)).toBeNull();
+    expect(saved('tags', null)).toEqual([]);
+    expect(saved('tags', ['Amy'])).toEqual(['Amy']);
   });
 
   it('applies lock states after re-enabling unlocked controls first', () => {
@@ -45,8 +54,8 @@ describe('MetadataFormBuilder', () => {
       authorsLocked: new FormControl(false),
       narrator: new FormControl('Narrator'),
       narratorLocked: new FormControl(false),
-      comicIssueNumber: new FormControl('7'),
-      comicIssueNumberLocked: new FormControl(false),
+      issueNumber: new FormControl('7'),
+      issueNumberLocked: new FormControl(false),
     });
 
     form.get('title')?.disable();
@@ -55,16 +64,13 @@ describe('MetadataFormBuilder', () => {
     builder.applyLockStates(form, {
       titleLocked: true,
       narratorLocked: true,
-      comicIssueNumberLocked: false,
-    }, [
-      {label: 'Title', controlName: 'title', lockedKey: 'titleLocked', fetchedKey: 'title', type: 'string'},
-      {label: 'Authors', controlName: 'authors', lockedKey: 'authorsLocked', fetchedKey: 'authors', type: 'array'},
-    ]);
+      issueNumberLocked: false,
+    }, [...BOOK_FIELDS, ...COMIC_FIELDS]);
 
     expect(form.get('title')?.disabled).toBe(true);
     expect(form.get('authors')?.enabled).toBe(true);
     expect(form.get('narrator')?.disabled).toBe(true);
-    expect(form.get('comicIssueNumber')?.enabled).toBe(true);
+    expect(form.get('issueNumber')?.enabled).toBe(true);
   });
 
   it('toggles all locked fields and matching control enabled state together', () => {

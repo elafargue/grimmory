@@ -14,7 +14,7 @@
             <div class="cover-section">
               @if (supportsDualCovers(book)) {
                 <div class="cover-type-label ebook">
-                  <i class="pi pi-book"></i> {{ t('ebookCover') }}
+                  <i class="pi pi-book"></i> {{ fieldLabels.label('ebookCover') }}
                 </div>
               }
               <app-cover
@@ -24,7 +24,7 @@
                 [authors]="book.metadata?.authors ?? []"
                 size="lg"
                 [preview]="true"
-                [alt]="t('ebookCover')" />
+                [alt]="fieldLabels.label('ebookCover')" />
               @if (isUploading) {
                 <p-progressSpinner class="upload-spinner" />
               }
@@ -74,10 +74,10 @@
                   [auto]="true"
                   (onBeforeUpload)="onBeforeSend()" />
                 @if (!book.metadata!['coverLocked']) {
-                  <p-button [pTooltip]="t('lockCoverTooltip')" tooltipPosition="top" size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="success" />
+                  <p-button [pTooltip]="t('lockCoverTooltip')" tooltipPosition="top" size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('cover')" severity="success" />
                 }
                 @else {
-                  <p-button [pTooltip]="t('unlockCoverTooltip')" tooltipPosition="top" size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="warn" />
+                  <p-button [pTooltip]="t('unlockCoverTooltip')" tooltipPosition="top" size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('cover')" severity="warn" />
                 }
               </div>
             </div>
@@ -87,7 +87,7 @@
           @if (hasAudiobookFormat(book)) {
             <div class="cover-section audiobook-cover-section">
               <div class="cover-type-label audiobook">
-                <i class="pi pi-headphones"></i> {{ t('audiobookCover') }}
+                <i class="pi pi-headphones"></i> {{ fieldLabels.label('audiobookCover') }}
               </div>
               <app-cover
                 class="square-cover"
@@ -97,7 +97,7 @@
                 [authors]="book.metadata?.authors ?? []"
                 size="lg"
                 [preview]="true"
-                [alt]="t('audiobookCover')" />
+                [alt]="fieldLabels.label('audiobookCover')" />
               @if (isUploading) {
                 <p-progressSpinner class="upload-spinner" />
               }
@@ -155,347 +155,113 @@
           }
         </div>
         <div class="fields-section">
-
-          <div class="field-row">
-            <div class="field-group title-field">
-              <label for="title">{{ t('title') }} @if (isEmbeddable('title', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <input pInputText id="title" formControlName="title"/>
-                @if (!book.metadata!['titleLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('title')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('title')" severity="warn" />
-                }
-              </div>
-            </div>
-
-            <div class="field-group subtitle-field">
-              <label for="subtitle">{{ t('subtitle') }} @if (isEmbeddable('subtitle', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <input pInputText id="subtitle" formControlName="subtitle"/>
-                @if (!book.metadata!['subtitleLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('subtitle')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('subtitle')" severity="warn" />
-                }
-              </div>
-            </div>
-
-            <div class="field-group language-field">
-              <label for="language">{{ t('language') }} @if (isEmbeddable('language', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <input pInputText id="language" formControlName="language"/>
-                @if (!book.metadata!['languageLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('language')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('language')" severity="warn" />
-                }
-              </div>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="field-group authors-field">
-              <label for="authors">{{ t('authors') }} @if (isEmbeddable('authors', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock authors-lock-wrapper">
-                <div class="author-chips-container" [class.disabled]="metadataForm.get('authors')?.disabled"
-                     cdkDropList cdkDropListOrientation="mixed"
-                     [cdkDropListDisabled]="metadataForm.get('authors')?.disabled"
-                     (cdkDropListDropped)="dropAuthor($event)">
-                  @for (author of metadataForm.get('authors')!.value; track $index) {
-                    <span class="author-chip" [class.main-author]="$first" cdkDrag>
-                      @if ($first) { <span class="main-author-badge">m</span> }
-                      {{ author }}
-                      @if (!metadataForm.get('authors')?.disabled) {
-                        <i
-                          class="pi pi-times author-chip-remove"
-                          role="button"
-                          tabindex="0"
-                          (click)="removeAuthor($index)"
-                          (keydown.enter)="removeAuthor($index)"></i>
+          <div class="field-row field-section">
+            @for (field of formFields; track field.name) {
+              <div class="field-group" [attr.data-field]="field.name">
+                <label [for]="field.name">{{ fieldLabels.label(field.name) }}</label>
+                <div class="field-with-lock" [class.authors-lock-wrapper]="field.name === 'authors'">
+                  @if (field.name === 'authors') {
+                    <div class="author-chips-container" [class.disabled]="metadataForm.get('authors')?.disabled"
+                         cdkDropList cdkDropListOrientation="mixed"
+                         [cdkDropListDisabled]="metadataForm.get('authors')?.disabled"
+                         (cdkDropListDropped)="dropAuthor($event)">
+                      @for (author of metadataForm.get('authors')!.value; track $index) {
+                        <span class="author-chip" [class.main-author]="$first" cdkDrag>
+                          @if ($first) { <span class="main-author-badge">m</span> }
+                          {{ author }}
+                          @if (!metadataForm.get('authors')?.disabled) {
+                            <i
+                              class="pi pi-times author-chip-remove"
+                              role="button"
+                              tabindex="0"
+                              (click)="removeAuthor($index)"
+                              (keydown.enter)="removeAuthor($index)"></i>
+                          }
+                        </span>
                       }
-                    </span>
-                  }
-                  @if (!metadataForm.get('authors')?.disabled) {
+                      @if (!metadataForm.get('authors')?.disabled) {
+                        <p-autoComplete
+                          class="author-add-input"
+                          [(ngModel)]="authorInputValue"
+                          [ngModelOptions]="{ standalone: true }"
+                          [appFacetSuggestions]="field.suggestions"
+                          [forceSelection]="false"
+                          [dropdown]="false"
+                          (onKeyUp)="onAuthorInputKeyUp($event)"
+                          (onSelect)="onAuthorInputSelect($event)"
+                          placeholder="Add author..."
+                        />
+                      }
+                    </div>
+                  } @else if (fieldLabels.options()[field.name]; as options) {
+                    <p-select
+                      [inputId]="field.name"
+                      [formControlName]="field.name"
+                      [options]="options"
+                      optionLabel="label"
+                      optionValue="value"
+                      [placeholder]="t('selectPlaceholder')"
+                      [showClear]="true"
+                      appendTo="body" />
+                  } @else if (field.valueType === 'date') {
+                    <p-datepicker
+                      [formControlName]="field.name"
+                      [inputId]="field.name"
+                      dataType="string"
+                      dateFormat="yy-mm-dd"
+                      [keepInvalid]="true"
+                      [showIcon]="false"
+                      [iconDisplay]="'input'"
+                      fluid="true"
+                      appendTo="body" />
+                  } @else if (field.valueType === 'array') {
+                    <div class="autocomplete-wrapper">
+                      <p-autoComplete
+                        [inputId]="field.name"
+                        [formControlName]="field.name"
+                        [multiple]="true"
+                        [dropdown]="false"
+                        [appFacetSuggestions]="field.suggestions"
+                        [forceSelection]="false"
+                        [showClear]="true"
+                        (onKeyUp)="onAutoCompleteKeyUp(field.name, $event)"
+                        (onSelect)="onAutoCompleteSelect(field.name, $event)" />
+                    </div>
+                  } @else if (field.suggestions) {
                     <p-autoComplete
-                      class="author-add-input"
-                      [(ngModel)]="authorInputValue"
-                      [ngModelOptions]="{ standalone: true }"
-                      appFacetSuggestions="author"
-                      [forceSelection]="false"
+                      [fluid]="true"
+                      [formControlName]="field.name"
+                      [inputId]="field.name"
+                      [multiple]="false"
                       [dropdown]="false"
-                      (onKeyUp)="onAuthorInputKeyUp($event)"
-                      (onSelect)="onAuthorInputSelect($event)"
-                      placeholder="Add author..."
-                    />
+                      [appFacetSuggestions]="field.suggestions"
+                      [forceSelection]="false"
+                      [showClear]="false" />
+                  } @else {
+                    <input pInputText [id]="field.name" [formControlName]="field.name"/>
+                  }
+                  @if (!book.metadata![field.lockName]) {
+                    <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.name)" severity="success" />
+                  }
+                  @else {
+                    <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.name)" severity="warn" />
                   }
                 </div>
-                @if (!book.metadata!['authorsLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('authors')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('authors')" severity="warn" />
-                }
               </div>
-            </div>
-            <div class="field-group publisher-field">
-              <label for="publisher">{{ t('publisher') }} @if (isEmbeddable('publisher', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <p-autoComplete
-                  [fluid]="true"
-                  formControlName="publisher"
-                  inputId="publisher"
-                  [multiple]="false"
-                  [dropdown]="false"
-                  appFacetSuggestions="publisher"
-                  [forceSelection]="false"
-                  [showClear]="false" />
-                @if (!book.metadata!['publisherLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('publisher')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('publisher')" severity="warn" />
-                }
-              </div>
-            </div>
-            <div class="field-group date-field">
-              <label for="publishedDate">{{ t('publishDate') }} @if (isEmbeddable('publishedDate', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <p-datepicker
-                  formControlName="publishedDate"
-                  inputId="publishedDate"
-                  dataType="string"
-                  dateFormat="yy-mm-dd"
-                  [keepInvalid]="true"
-                  [showIcon]="false"
-                  [iconDisplay]="'input'"
-                  fluid="true"
-                  appendTo="body" />
-                @if (!book.metadata!['publishedDateLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('publishedDate')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('publishedDate')" severity="warn" />
-                }
-              </div>
+            }
+          <div class="field-group" data-field="reviews">
+            <label for="reviews">{{ fieldLabels.label('reviews') }}</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="reviews" [disabled]="true" [value]="t('noValue')"/>
+              @if (!book.metadata!['reviewsLocked']) {
+                <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('reviews')" severity="success" />
+              }
+              @else {
+                <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('reviews')" severity="warn" />
+              }
             </div>
           </div>
-
-          <div class="field-row">
-            <div class="field-group full-width">
-              <label for="categories">{{ t('genres') }} @if (isEmbeddable('categories', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <div class="autocomplete-wrapper">
-                  <p-autoComplete
-                    formControlName="categories"
-                    [multiple]="true"
-                    [dropdown]="false"
-                    appFacetSuggestions="genre"
-                    [forceSelection]="false"
-                    [showClear]="true"
-                    (onKeyUp)="onAutoCompleteKeyUp('categories', $event)"
-                    (onSelect)="onAutoCompleteSelect('categories', $event)" />
-                </div>
-                @if (!book.metadata!['categoriesLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('categories')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('categories')" severity="warn" />
-                }
-              </div>
-            </div>
           </div>
-
-          <div class="field-row">
-            <div class="field-group half-width">
-              <label for="moods">{{ t('moods') }} @if (isEmbeddable('moods', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <div class="autocomplete-wrapper">
-                  <p-autoComplete
-                    formControlName="moods"
-                    [multiple]="true"
-                    [dropdown]="false"
-                    appFacetSuggestions="mood"
-                    [forceSelection]="false"
-                    [showClear]="true"
-                    (onKeyUp)="onAutoCompleteKeyUp('moods', $event)"
-                    (onSelect)="onAutoCompleteSelect('moods', $event)" />
-                </div>
-                @if (!book.metadata!['moodsLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('moods')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('moods')" severity="warn" />
-                }
-              </div>
-            </div>
-            <div class="field-group half-width">
-              <label for="tags">{{ t('tags') }} @if (isEmbeddable('tags', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <div class="autocomplete-wrapper">
-                  <p-autoComplete
-                    formControlName="tags"
-                    [multiple]="true"
-                    [dropdown]="false"
-                    appFacetSuggestions="tag"
-                    [forceSelection]="false"
-                    [showClear]="true"
-                    (onKeyUp)="onAutoCompleteKeyUp('tags', $event)"
-                    (onSelect)="onAutoCompleteSelect('tags', $event)" />
-                </div>
-                @if (!book.metadata!['tagsLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('tags')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('tags')" severity="warn" />
-                }
-              </div>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="field-group series-name-field">
-              <label for="seriesName">{{ t('seriesName') }} @if (isEmbeddable('seriesName', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <p-autoComplete
-                  [fluid]="true"
-                  formControlName="seriesName"
-                  inputId="seriesName"
-                  [multiple]="false"
-                  [dropdown]="false"
-                  appFacetSuggestions="series"
-                  [forceSelection]="false"
-                  [showClear]="false" />
-                @if (!book.metadata!['seriesNameLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('seriesName')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('seriesName')" severity="warn" />
-                }
-              </div>
-            </div>
-
-            <div class="field-group small-field">
-              <label for="seriesNumber">{{ t('seriesNumber') }} @if (isEmbeddable('seriesNumber', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <input pInputText id="seriesNumber" formControlName="seriesNumber"/>
-                @if (!book.metadata!['seriesNumberLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('seriesNumber')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('seriesNumber')" severity="warn" />
-                }
-              </div>
-            </div>
-
-            <div class="field-group small-field">
-              <label for="seriesTotal">{{ t('seriesTotal') }} @if (isEmbeddable('seriesTotal', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <input pInputText id="seriesTotal" formControlName="seriesTotal"/>
-                @if (!book.metadata!['seriesTotalLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('seriesTotal')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('seriesTotal')" severity="warn" />
-                }
-              </div>
-            </div>
-            <div class="field-group small-field">
-              <span>{{ t('publicReviews') }}</span>
-              <div class="field-with-lock">
-                <input pSize="small" pInputText [disabled]="true" [value]="t('noValue')"/>
-                @if (!book.metadata!['reviewsLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('reviews')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('reviews')" severity="warn" />
-                }
-              </div>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="field-group small-field">
-              <label for="isbn10">{{ t('isbn10') }} @if (isEmbeddable('isbn10', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <input pInputText id="isbn10" formControlName="isbn10"/>
-                @if (!book.metadata!['isbn10Locked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('isbn10')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('isbn10')" severity="warn" />
-                }
-              </div>
-            </div>
-            <div class="field-group small-field">
-              <label for="isbn13">{{ t('isbn13') }} @if (isEmbeddable('isbn13', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <input pInputText id="isbn13" formControlName="isbn13"/>
-                @if (!book.metadata!['isbn13Locked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('isbn13')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('isbn13')" severity="warn" />
-                }
-              </div>
-            </div>
-            <div class="field-group small-field">
-              <label for="ageRating">{{ t('ageRating') }} @if (isEmbeddable('ageRating', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <p-select
-                  id="ageRating"
-                  formControlName="ageRating"
-                  [options]="ageRatingOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  [placeholder]="t('selectPlaceholder')"
-                  [showClear]="true"
-                  appendTo="body" />
-                @if (!book.metadata!['ageRatingLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('ageRating')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ageRating')" severity="warn" />
-                }
-              </div>
-            </div>
-            <div class="field-group small-field">
-              <label for="contentRating">{{ t('contentRating') }} @if (isEmbeddable('contentRating', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <p-select
-                  id="contentRating"
-                  formControlName="contentRating"
-                  [options]="contentRatingOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  [placeholder]="t('selectPlaceholder')"
-                  [showClear]="true"
-                  appendTo="body" />
-                @if (!book.metadata!['contentRatingLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('contentRating')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('contentRating')" severity="warn" />
-                }
-              </div>
-            </div>
-            <div class="field-group small-field">
-              <label for="pageCount">{{ t('pages') }} @if (isEmbeddable('pageCount', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
-              <div class="field-with-lock">
-                <input pInputText id="pageCount" formControlName="pageCount"/>
-                @if (!book.metadata!['pageCountLocked']) {
-                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('pageCount')" severity="success" />
-                }
-                @else {
-                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('pageCount')" severity="warn" />
-                }
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
 
@@ -517,18 +283,18 @@
               <div class="field-row metadata-ids-row">
                 @for (field of audiobookMetadataFields; track field) {
                   <div class="field-group metadata-id-field">
-                    <span>{{ field.label }} @if (isEmbeddable(field.controlName, book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</span>
+                    <label [for]="field.name">{{ fieldLabels.label(field.name) }}</label>
                     <div class="field-with-lock">
-                      @if (field.type === 'boolean') {
-                        <p-select [formControlName]="field.controlName" [options]="booleanOptions" optionLabel="label" optionValue="value" appendTo="body" />
+                      @if (field.valueType === 'boolean') {
+                        <p-select [inputId]="field.name" [formControlName]="field.name" [options]="booleanOptions" optionLabel="label" optionValue="value" appendTo="body" />
                       } @else {
-                        <input pInputText [formControlName]="field.controlName"/>
+                        <input pInputText [id]="field.name" [formControlName]="field.name"/>
                       }
-                      @if (!metadataForm.get(field.lockedKey)?.value) {
-                        <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success" />
+                      @if (!metadataForm.get(field.lockName)?.value) {
+                        <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.name)" severity="success" />
                       }
                       @else {
-                        <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn" />
+                        <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.name)" severity="warn" />
                       }
                     </div>
                   </div>
@@ -556,20 +322,20 @@
             <div class="collapsible-content">
               <!-- Text/number/boolean fields in grid -->
               <div class="comic-text-grid">
-                @for (field of comicTextFields; track field) {
+                @for (field of comicSingleValueFields; track field) {
                   <div class="field-group">
-                    <span>{{ field.label }} @if (isEmbeddable(field.controlName, book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</span>
+                    <label [for]="field.name">{{ fieldLabels.label(field.name) }}</label>
                     <div class="field-with-lock">
-                      @if (field.type === 'boolean') {
-                        <p-select [formControlName]="field.controlName" [options]="booleanOptions" optionLabel="label" optionValue="value" size="small" appendTo="body" />
+                      @if (field.valueType === 'boolean') {
+                        <p-select [inputId]="field.name" [formControlName]="field.name" [options]="booleanOptions" optionLabel="label" optionValue="value" size="small" appendTo="body" />
                       } @else {
-                        <input pSize="small" pInputText [formControlName]="field.controlName"/>
+                        <input pSize="small" pInputText [id]="field.name" [formControlName]="field.name"/>
                       }
-                      @if (!metadataForm.get(field.lockedKey)?.value) {
-                        <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success" />
+                      @if (!metadataForm.get(field.lockName)?.value) {
+                        <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.name)" severity="success" />
                       }
                       @else {
-                        <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn" />
+                        <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.name)" severity="warn" />
                       }
                     </div>
                   </div>
@@ -580,24 +346,25 @@
               <div class="comic-array-grid">
                 @for (field of comicArrayFields; track field) {
                   <div class="field-group">
-                    <span>{{ field.label }} @if (isEmbeddable(field.controlName, book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</span>
+                    <label [for]="field.name">{{ fieldLabels.label(field.name) }}</label>
                     <div class="field-with-lock">
                       <div class="autocomplete-wrapper">
                         <p-autoComplete
-                          [formControlName]="field.controlName"
+                          [inputId]="field.name"
+                          [formControlName]="field.name"
                           [multiple]="true"
                           [dropdown]="false"
-                          [suggestions]="[]"
+                          [appFacetSuggestions]="field.suggestions"
                           [forceSelection]="false"
                           [showClear]="true"
-                          (onKeyUp)="onAutoCompleteKeyUp(field.controlName, $event)"
-                          (onSelect)="onAutoCompleteSelect(field.controlName, $event)" />
+                          (onKeyUp)="onAutoCompleteKeyUp(field.name, $event)"
+                          (onSelect)="onAutoCompleteSelect(field.name, $event)" />
                       </div>
-                      @if (!metadataForm.get(field.lockedKey)?.value) {
-                        <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success" />
+                      @if (!metadataForm.get(field.lockName)?.value) {
+                        <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.name)" severity="success" />
                       }
                       @else {
-                        <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn" />
+                        <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.name)" severity="warn" />
                       }
                     </div>
                   </div>
@@ -608,14 +375,14 @@
               @for (field of comicTextareaFields; track field) {
                 <div class="field-row comic-array-row">
                   <div class="field-group full-width">
-                    <span>{{ field.label }} @if (isEmbeddable(field.controlName, book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</span>
+                    <label [for]="field.name">{{ fieldLabels.label(field.name) }}</label>
                     <div class="field-with-lock description-with-lock">
-                      <textarea pTextarea [formControlName]="field.controlName" rows="4"></textarea>
-                      @if (!metadataForm.get(field.lockedKey)?.value) {
-                        <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success" />
+                      <textarea pTextarea [id]="field.name" [formControlName]="field.name" rows="4"></textarea>
+                      @if (!metadataForm.get(field.lockName)?.value) {
+                        <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.name)" severity="success" />
                       }
                       @else {
-                        <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn" />
+                        <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.name)" severity="warn" />
                       }
                     </div>
                   </div>
@@ -644,7 +411,7 @@
               @for (field of providerFields.fields(); track field.name) {
                 @if (isFieldVisible(field.name)) {
                   <div class="field-group metadata-id-field">
-                    <label [for]="field.name">{{ providerFields.label(field.name) }} @if (isEmbeddable(field.name, book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
+                    <label [for]="field.name">{{ fieldLabels.label(field.name) }}</label>
                     <div class="field-with-lock">
                       <input pSize="small" pInputText [id]="field.name" [formControlName]="field.name"/>
                       @if (!book.metadata![field.lockName]) {
@@ -664,7 +431,7 @@
 
       <div class="description-section">
         <div class="field-group description-field">
-          <label for="description">{{ t('description') }} @if (isEmbeddable('description', book)) { <i class="pi pi-file-export embeddable-indicator" [pTooltip]="t('writtenToFileTooltip')" tooltipPosition="top"></i> }</label>
+          <label for="description">{{ fieldLabels.label('description') }}</label>
           <div class="field-with-lock description-with-lock">
                 <textarea
                   id="description"

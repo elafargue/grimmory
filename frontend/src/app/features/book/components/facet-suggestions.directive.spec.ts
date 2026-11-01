@@ -13,6 +13,7 @@ import {FacetSuggestionsDirective} from './facet-suggestions.directive';
   providers: [{provide: AutoComplete, useExisting: StubAutoComplete}],
 })
 class StubAutoComplete {
+  typeahead = true;
   readonly answers: string[][] = [];
   readonly completeMethod = new EventEmitter<AutoCompleteCompleteEvent>();
   set suggestions(values: string[]) {
@@ -25,6 +26,12 @@ class StubAutoComplete {
   template: '<app-stub-autocomplete appFacetSuggestions="author" />',
 })
 class Host {}
+
+@Component({
+  imports: [StubAutoComplete, FacetSuggestionsDirective],
+  template: '<app-stub-autocomplete [appFacetSuggestions]="undefined" />',
+})
+class HostWithoutSuggestions {}
 
 it('answers every search, including the same query typed again', async () => {
   TestBed.configureTestingModule({
@@ -52,4 +59,14 @@ it('answers every search, including the same query typed again', async () => {
   await vi.waitFor(() => expect(autoComplete.answers).toHaveLength(2));
 
   expect(autoComplete.answers).toEqual([['Joseph Conrad'], ['Joseph Conrad']]);
+});
+
+it('turns off search when the field has no suggestions', () => {
+  TestBed.configureTestingModule({
+    providers: [provideZonelessChangeDetection(), provideTanStackQuery(new QueryClient()), {provide: BookQueryService, useValue: {}}],
+  });
+  const fixture = TestBed.createComponent(HostWithoutSuggestions);
+  fixture.detectChanges();
+
+  expect(fixture.debugElement.children[0].injector.get(StubAutoComplete).typeahead).toBe(false);
 });

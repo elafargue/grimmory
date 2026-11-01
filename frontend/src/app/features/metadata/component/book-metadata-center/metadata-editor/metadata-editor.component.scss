@@ -202,6 +202,12 @@ label {
   }
 }
 
+.field-section {
+  @media (width >= 768px) {
+    flex-wrap: wrap;
+  }
+}
+
 .field-group {
   display: flex;
   flex-direction: column;
@@ -212,29 +218,31 @@ label {
   }
 }
 
-.title-field {
+[data-field='title'] {
   @media (width >= 768px) {
-    flex-basis: 45%;
-    flex-shrink: 0;
+    flex: 1 1 45%;
+    min-width: 0;
   }
 }
 
-.subtitle-field {
+[data-field='subtitle'] {
   @media (width >= 768px) {
-    flex-basis: 40%;
+    flex: 1 1 40%;
+    min-width: 0;
   }
 }
 
-.language-field {
+[data-field='language'] {
   @media (width >= 768px) {
-    width: 9.625rem;
+    flex: 1 1 30%;
+    min-width: 0;
   }
 }
 
-.authors-field {
+[data-field='authors'] {
   @media (width >= 768px) {
-    flex-basis: 45%;
-    flex-shrink: 0;
+    flex: 1 1 45%;
+    min-width: 0;
   }
 }
 
@@ -324,15 +332,17 @@ label {
   transition: transform 200ms ease;
 }
 
-.publisher-field {
+[data-field='publisher'] {
   @media (width >= 768px) {
-    flex-basis: 35%;
+    flex: 1 1 30%;
+    min-width: 0;
   }
 }
 
-.date-field {
+[data-field='publishedDate'] {
   @media (width >= 768px) {
-    flex-basis: 20%;
+    flex: 1 1 18%;
+    min-width: 0;
 
     p-datepicker {
       width: 100%;
@@ -341,28 +351,43 @@ label {
   }
 }
 
-.full-width {
+.full-width,
+[data-field='categories'] {
   width: 100%;
 }
 
-.half-width {
+[data-field='moods'],
+[data-field='tags'] {
   width: 100%;
 
   @media (width >= 768px) {
-    flex: 1;
+    flex: 1 1 40%;
   }
 }
 
-.series-name-field {
+[data-field='seriesName'] {
   @media (width >= 768px) {
-    flex: 4.75;
+    flex: 1 1 50%;
     min-width: 0;
   }
 }
 
-.small-field {
+[data-field='seriesNumber'],
+[data-field='seriesTotal'],
+[data-field='isbn10'],
+[data-field='isbn13'],
+[data-field='pageCount'] {
   @media (width >= 768px) {
-    flex: 1;
+    flex: 1 1 15%;
+    min-width: 0;
+  }
+}
+
+[data-field='ageRating'],
+[data-field='contentRating'],
+[data-field='reviews'] {
+  @media (width >= 768px) {
+    flex: 1 1 25%;
     min-width: 0;
   }
 }
@@ -492,6 +517,7 @@ label {
   p-datepicker,
   p-select {
     width: 100%;
+    min-width: 0;
   }
 }
 
@@ -581,13 +607,6 @@ label {
   align-items: center;
   width: 100%;
   gap: 0.875rem;
-}
-
-.embeddable-indicator {
-  font-size: 0.5687rem;
-  color: var(--p-green-500);
-  margin-left: 0.2188rem;
-  vertical-align: super;
 }
 
 .mobile-lock-actions {

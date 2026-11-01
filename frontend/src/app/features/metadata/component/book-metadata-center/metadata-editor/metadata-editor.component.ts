@@ -6,10 +6,10 @@ import {Divider} from "@openng/optimus-ui/divider";
 import {FormControl, FormGroup, FormsModule, ReactiveFormsModule,} from "@angular/forms";
 import {Observable, sample} from "rxjs";
 import {MessageService} from "@openng/optimus-ui/api";
-import {Book, BookMetadata, ComicMetadata, MetadataClearFlags, MetadataUpdateWrapper,} from "../../../../book/model/book.model";
+import {Book, BookMetadata, MetadataClearFlags, MetadataUpdateWrapper,} from "../../../../book/model/book.model";
 import {UrlHelperService} from "../../../../../shared/service/url-helper.service";
 import {CoverComponent} from "../../../../../shared/components/cover/cover.component";
-import {ALL_COMIC_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, COMIC_FORM_TO_MODEL_LOCK, COMIC_TEXT_METADATA_FIELDS, COMIC_ARRAY_METADATA_FIELDS, COMIC_TEXTAREA_METADATA_FIELDS, isFieldEmbeddable, hasMetadataWriter, MetadataProviderFieldsService, providerFieldRecord} from '../../../../../shared/metadata';
+import {BOOK_FIELDS, BOOK_LOCKS, BOOK_NON_FIELD_LOCKS, bookFieldsNamed, COMIC_FIELDS, MetadataFieldLabelService, MetadataFormBuilder, MetadataProviderFieldsService, providerFieldRecord, readFormValue, toFormValue, type BookField, type MetadataField, type MetadataLock, type MetadataProviderField} from '../../../../../shared/metadata';
 import {FileUpload, FileUploadErrorEvent, FileUploadEvent,} from "@openng/optimus-ui/fileupload";
 import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
@@ -37,6 +37,7 @@ import {CdkDragDrop, CdkDropList, CdkDrag, moveItemInArray} from '@angular/cdk/d
 
 import {QueryClient} from '@tanstack/angular-query-experimental';
 import {MetadataSourceQueryService} from '../../../sources/metadata-source-query.service';
+import type {BookDetailComicMetadata} from '../../../../book/data/book-response.models';
 
 @Component({
   selector: "app-metadata-editor",
@@ -80,6 +81,8 @@ export class MetadataEditorComponent implements OnInit {
   private readonly queryClient = inject(QueryClient);
   private readonly sources = inject(MetadataSourceQueryService);
   protected readonly providerFields = inject(MetadataProviderFieldsService);
+  protected readonly fieldLabels = inject(MetadataFieldLabelService);
+  private readonly formBuilder = inject(MetadataFormBuilder);
   private currentBook: Book | null = null;
 
   @Input()
@@ -129,25 +132,25 @@ export class MetadataEditorComponent implements OnInit {
   authorInputValue = '';
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
 
-  contentRatingOptions: {label: string, value: string}[] = [];
-  ageRatingOptions: {label: string, value: number}[] = [];
   booleanOptions: {label: string, value: boolean | null}[] = [];
 
   comicSectionExpanded = true;
   audiobookSectionExpanded = true;
   providerSectionExpanded = true;
 
-  comicTextFields = COMIC_TEXT_METADATA_FIELDS;
-  comicArrayFields = COMIC_ARRAY_METADATA_FIELDS;
-  comicTextareaFields = COMIC_TEXTAREA_METADATA_FIELDS;
-  audiobookMetadataFields = AUDIOBOOK_METADATA_FIELDS;
+  comicSingleValueFields = COMIC_FIELDS.filter(field => field.valueType !== 'array' && field.valueType !== 'text');
+  comicArrayFields = COMIC_FIELDS.filter(field => field.valueType === 'array');
+  comicTextareaFields = COMIC_FIELDS.filter(field => field.valueType === 'text');
+  audiobookMetadataFields = bookFieldsNamed(['narrator', 'abridged']);
+  readonly formFields = bookFieldsNamed([
+    'title', 'subtitle', 'authors', 'publisher', 'publishedDate', 'categories', 'moods', 'tags',
+    'seriesName', 'seriesNumber', 'seriesTotal', 'language', 'isbn10', 'isbn13', 'pageCount', 'ageRating', 'contentRating',
+  ]);
 
   private readonly providerSpecificFields = computed<MetadataProviderSpecificFields>(
     () => this.appSettingsService.appSettings()?.metadataProviderSpecificFields
       ?? providerFieldRecord(this.providerFields.fields(), () => true),
   );
-
-  private readonly providerFieldNames = computed(() => new Set(this.providerFields.fields().map(field => field.name)));
 
   readonly navigationState = this.bookNavigationService.navigationState;
   readonly canNavigatePrevious = this.bookNavigationService.canNavigatePrevious;
@@ -198,93 +201,22 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   constructor() {
-    this.metadataForm = new FormGroup({
-      title: new FormControl(""),
-      subtitle: new FormControl(""),
-      authors: new FormControl(""),
-      categories: new FormControl(""),
-      moods: new FormControl(""),
-      tags: new FormControl(""),
-      publisher: new FormControl(""),
-      publishedDate: new FormControl(""),
-      isbn10: new FormControl(""),
-      isbn13: new FormControl(""),
-      description: new FormControl(""),
-      pageCount: new FormControl(""),
-      language: new FormControl(""),
-      seriesName: new FormControl(""),
-      seriesNumber: new FormControl(""),
-      seriesTotal: new FormControl(""),
-      thumbnailUrl: new FormControl(""),
-      audiobookCover: new FormControl(""),
-
-      titleLocked: new FormControl(false),
-      subtitleLocked: new FormControl(false),
-      authorsLocked: new FormControl(false),
-      categoriesLocked: new FormControl(false),
-      moodsLocked: new FormControl(false),
-      tagsLocked: new FormControl(false),
-      publisherLocked: new FormControl(false),
-      publishedDateLocked: new FormControl(false),
-      isbn10Locked: new FormControl(false),
-      isbn13Locked: new FormControl(false),
-      descriptionLocked: new FormControl(false),
-      pageCountLocked: new FormControl(false),
-      languageLocked: new FormControl(false),
-      seriesNameLocked: new FormControl(false),
-      seriesNumberLocked: new FormControl(false),
-      seriesTotalLocked: new FormControl(false),
-      coverLocked: new FormControl(false),
-      audiobookCoverLocked: new FormControl(false),
-      reviewsLocked: new FormControl(false),
-      ageRating: new FormControl(""),
-      contentRating: new FormControl(""),
-      ageRatingLocked: new FormControl(false),
-      contentRatingLocked: new FormControl(false),
-    });
+    this.metadataForm = this.formBuilder.buildForm(this.lockableFields());
+    for (const lock of BOOK_NON_FIELD_LOCKS) this.metadataForm.addControl(lock.lockName, new FormControl(false));
 
     this.booleanOptions = [
       {label: this.t.translate('metadata.editor.booleanUnknown'), value: null},
       {label: this.t.translate('metadata.editor.booleanYes'), value: true},
       {label: this.t.translate('metadata.editor.booleanNo'), value: false},
     ];
+  }
 
-    this.contentRatingOptions = [
-      {label: this.t.translate('metadata.editor.contentRatingEveryone'), value: 'EVERYONE'},
-      {label: this.t.translate('metadata.editor.contentRatingTeen'), value: 'TEEN'},
-      {label: this.t.translate('metadata.editor.contentRatingMature'), value: 'MATURE'},
-      {label: this.t.translate('metadata.editor.contentRatingAdult'), value: 'ADULT'},
-      {label: this.t.translate('metadata.editor.contentRatingExplicit'), value: 'EXPLICIT'}
-    ];
+  private topLevelFields(): (BookField | MetadataProviderField)[] {
+    return [...BOOK_FIELDS, ...this.providerFields.fields()];
+  }
 
-    this.ageRatingOptions = [
-      {label: this.t.translate('metadata.editor.ageRatingAllAges'), value: 0},
-      {label: '6+', value: 6},
-      {label: '10+', value: 10},
-      {label: '13+', value: 13},
-      {label: '16+', value: 16},
-      {label: '18+', value: 18},
-      {label: '21+', value: 21}
-    ];
-
-    for (const field of this.providerFields.fields()) {
-      this.metadataForm.addControl(field.name, new FormControl(''));
-      this.metadataForm.addControl(field.lockName, new FormControl(false));
-    }
-
-    // Add audiobook metadata form controls
-    for (const field of AUDIOBOOK_METADATA_FIELDS) {
-      const defaultValue = field.type === 'boolean' ? null : '';
-      this.metadataForm.addControl(field.controlName, new FormControl(defaultValue));
-      this.metadataForm.addControl(field.lockedKey, new FormControl(false));
-    }
-
-    // Add comic metadata form controls
-    for (const field of ALL_COMIC_METADATA_FIELDS) {
-      const defaultValue = field.type === 'array' ? [] : (field.type === 'number' || field.type === 'boolean') ? null : '';
-      this.metadataForm.addControl(field.controlName, new FormControl(defaultValue));
-      this.metadataForm.addControl(field.lockedKey, new FormControl(false));
-    }
+  private lockableFields(): MetadataField[] {
+    return [...this.topLevelFields(), ...COMIC_FIELDS];
   }
 
   ngOnInit(): void {
@@ -296,146 +228,17 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   private populateFormFromMetadata(metadata: BookMetadata): void {
+    const comic: BookDetailComicMetadata | undefined = metadata.comicMetadata;
+    const locks = {
+      ...Object.fromEntries([...BOOK_LOCKS, ...this.providerFields.fields()].map(lock => [lock.lockName, metadata[lock.lockName] === true])),
+      ...Object.fromEntries(COMIC_FIELDS.map(field => [field.lockName, comic?.[field.lockName] === true])),
+    };
     this.metadataForm.patchValue({
-      title: metadata.title ?? null,
-      subtitle: metadata.subtitle ?? null,
-      authors: [...(metadata.authors ?? [])],
-      categories: [...(metadata.categories ?? [])].sort(),
-      moods: [...(metadata.moods ?? [])].sort(),
-      tags: [...(metadata.tags ?? [])].sort(),
-      publisher: metadata.publisher ?? null,
-      publishedDate: metadata.publishedDate ?? null,
-      isbn10: metadata.isbn10 ?? null,
-      isbn13: metadata.isbn13 ?? null,
-      description: metadata.description ?? null,
-      pageCount: metadata.pageCount ?? null,
-      language: metadata.language ?? null,
-      rating: metadata.rating ?? null,
-      reviewCount: metadata.reviewCount ?? null,
-      seriesName: metadata.seriesName ?? null,
-      seriesNumber: metadata.seriesNumber ?? null,
-      seriesTotal: metadata.seriesTotal ?? null,
-      titleLocked: metadata.titleLocked ?? false,
-      subtitleLocked: metadata.subtitleLocked ?? false,
-      authorsLocked: metadata.authorsLocked ?? false,
-      categoriesLocked: metadata.categoriesLocked ?? false,
-      moodsLocked: metadata.moodsLocked ?? false,
-      tagsLocked: metadata.tagsLocked ?? false,
-      publisherLocked: metadata.publisherLocked ?? false,
-      publishedDateLocked: metadata.publishedDateLocked ?? false,
-      isbn10Locked: metadata.isbn10Locked ?? false,
-      isbn13Locked: metadata.isbn13Locked ?? false,
-      descriptionLocked: metadata.descriptionLocked ?? false,
-      pageCountLocked: metadata.pageCountLocked ?? false,
-      languageLocked: metadata.languageLocked ?? false,
-      seriesNameLocked: metadata.seriesNameLocked ?? false,
-      seriesNumberLocked: metadata.seriesNumberLocked ?? false,
-      seriesTotalLocked: metadata.seriesTotalLocked ?? false,
-      coverLocked: metadata.coverLocked ?? false,
-      audiobookCoverLocked: metadata.audiobookCoverLocked ?? false,
-      reviewsLocked: metadata.reviewsLocked ?? false,
-      ageRating: metadata.ageRating ?? null,
-      contentRating: metadata.contentRating ?? null,
-      ageRatingLocked: metadata.ageRatingLocked ?? false,
-      contentRatingLocked: metadata.contentRatingLocked ?? false,
+      ...Object.fromEntries(this.topLevelFields().map(field => [field.name, toFormValue(field, metadata[field.name])])),
+      ...Object.fromEntries(COMIC_FIELDS.map(field => [field.name, toFormValue(field, comic?.[field.name])])),
+      ...locks,
     });
-
-    const providerPatch: Record<string, string | number | boolean | null> = {};
-    for (const field of this.providerFields.fields()) {
-      providerPatch[field.name] = metadata[field.name] ?? null;
-      providerPatch[field.lockName] = metadata[field.lockName] ?? false;
-    }
-    this.metadataForm.patchValue(providerPatch);
-
-    // Patch audiobook metadata
-    const audiobookPatch: Record<string, unknown> = {};
-    for (const field of AUDIOBOOK_METADATA_FIELDS) {
-      const key = field.controlName as keyof BookMetadata;
-      const lockedKey = field.lockedKey as keyof BookMetadata;
-      audiobookPatch[field.controlName] = metadata[key] ?? (field.type === 'boolean' ? null : '');
-      audiobookPatch[field.lockedKey] = metadata[lockedKey] ?? false;
-    }
-    this.metadataForm.patchValue(audiobookPatch);
-
-    // Patch comic metadata
-    const comicMeta = metadata.comicMetadata;
-    const comicPatch: Record<string, unknown> = {};
-    for (const field of ALL_COMIC_METADATA_FIELDS) {
-      const value = comicMeta?.[field.fetchedKey as keyof ComicMetadata];
-      if (field.type === 'array') {
-        comicPatch[field.controlName] = [...(value as string[] ?? [])].sort();
-      } else if (field.type === 'boolean' || field.type === 'number') {
-        comicPatch[field.controlName] = value ?? null;
-      } else {
-        comicPatch[field.controlName] = value ?? '';
-      }
-      const modelLockKey = COMIC_FORM_TO_MODEL_LOCK[field.lockedKey];
-      comicPatch[field.lockedKey] = comicMeta?.[modelLockKey as keyof ComicMetadata] ?? false;
-    }
-    this.metadataForm.patchValue(comicPatch);
-
-    const lockableFields: { key: keyof BookMetadata; control: string }[] = [
-      {key: "titleLocked", control: "title"},
-      {key: "subtitleLocked", control: "subtitle"},
-      {key: "authorsLocked", control: "authors"},
-      {key: "categoriesLocked", control: "categories"},
-      {key: "moodsLocked", control: "moods"},
-      {key: "tagsLocked", control: "tags"},
-      {key: "publisherLocked", control: "publisher"},
-      {key: "publishedDateLocked", control: "publishedDate"},
-      {key: "languageLocked", control: "language"},
-      {key: "isbn10Locked", control: "isbn10"},
-      {key: "isbn13Locked", control: "isbn13"},
-      ...this.providerFields.fields().map(field => ({key: field.lockName, control: field.name})),
-      {key: "pageCountLocked", control: "pageCount"},
-      {key: "descriptionLocked", control: "description"},
-      {key: "seriesNameLocked", control: "seriesName"},
-      {key: "seriesNumberLocked", control: "seriesNumber"},
-      {key: "seriesTotalLocked", control: "seriesTotal"},
-      {key: "coverLocked", control: "thumbnailUrl"},
-      {key: "audiobookCoverLocked", control: "audiobookCover"},
-      {key: "reviewsLocked", control: "reviews"},
-      {key: "ageRatingLocked", control: "ageRating"},
-      {key: "contentRatingLocked", control: "contentRating"},
-    ];
-
-    for (const {key, control} of lockableFields) {
-      const isLocked = metadata[key] === true;
-      const formControl = this.metadataForm.get(control);
-      if (formControl) {
-        if (isLocked) {
-          formControl.disable();
-        } else {
-          formControl.enable();
-        }
-      }
-    }
-
-    // Apply audiobook lock states
-    for (const field of AUDIOBOOK_METADATA_FIELDS) {
-      const isLocked = this.metadataForm.get(field.lockedKey)?.value === true;
-      const formControl = this.metadataForm.get(field.controlName);
-      if (formControl) {
-        if (isLocked) {
-          formControl.disable();
-        } else {
-          formControl.enable();
-        }
-      }
-    }
-
-    // Apply comic lock states
-    for (const field of ALL_COMIC_METADATA_FIELDS) {
-      const isLocked = this.metadataForm.get(field.lockedKey)?.value === true;
-      const formControl = this.metadataForm.get(field.controlName);
-      if (formControl) {
-        if (isLocked) {
-          formControl.disable();
-        } else {
-          formControl.enable();
-        }
-      }
-    }
+    this.formBuilder.applyLockStates(this.metadataForm, locks, this.lockableFields());
   }
 
   onAutoCompleteSelect(fieldName: string, event: AutoCompleteSelectEvent) {
@@ -502,9 +305,6 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   toggleLock(field: string): void {
-    if (field === "thumbnailUrl") {
-      field = "cover";
-    }
     const isLocked = this.metadataForm.get(field + "Locked")?.value;
     const updatedLockedState = !isLocked;
     this.metadataForm.get(field + "Locked")?.setValue(updatedLockedState);
@@ -518,122 +318,32 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   lockAll(): void {
-    Object.keys(this.metadataForm.controls).forEach((key) => {
-      if (key.endsWith("Locked")) {
-        this.metadataForm.get(key)?.setValue(true);
-        const fieldName = key.replace("Locked", "");
-        this.metadataForm.get(fieldName)?.disable();
-      }
-    });
+    this.formBuilder.setAllFieldsLocked(this.metadataForm, true);
     this.updateMetadata(true);
   }
 
   unlockAll(): void {
-    Object.keys(this.metadataForm.controls).forEach((key) => {
-      if (key.endsWith("Locked")) {
-        this.metadataForm.get(key)?.setValue(false);
-        const fieldName = key.replace("Locked", "");
-        this.metadataForm.get(fieldName)?.enable();
-      }
-    });
+    this.formBuilder.setAllFieldsLocked(this.metadataForm, false);
     this.updateMetadata(false);
   }
 
   private buildMetadataWrapper(shouldLockAllFields?: boolean): MetadataUpdateWrapper {
     const form = this.metadataForm;
 
+    const valuesOf = (fields: readonly MetadataField[]) =>
+      Object.fromEntries(fields.map(field => [field.name, readFormValue(form, field)]));
+    const locksOf = (locks: readonly MetadataLock[]) => Object.fromEntries(locks.map(lock => [lock.lockName, form.get(lock.lockName)?.value]));
+
     const metadata: BookMetadata = {
       bookId: this.currentBookId,
-      title: form.get("title")?.value,
-      subtitle: form.get("subtitle")?.value,
-      authors: form.get("authors")?.value ?? [],
-      categories: form.get("categories")?.value ?? [],
-      moods: form.get("moods")?.value ?? [],
-      tags: form.get("tags")?.value ?? [],
-      publisher: form.get("publisher")?.value,
-      publishedDate: form.get("publishedDate")?.value,
-      isbn10: form.get("isbn10")?.value,
-      isbn13: form.get("isbn13")?.value,
-      description: form.get("description")?.value,
-      pageCount: form.get("pageCount")?.value,
-      rating: form.get("rating")?.value,
-      reviewCount: form.get("reviewCount")?.value,
-      language: form.get("language")?.value,
-      seriesName: form.get("seriesName")?.value,
-      seriesNumber: form.get("seriesNumber")?.value,
-      seriesTotal: form.get("seriesTotal")?.value,
-      thumbnailUrl: form.get("thumbnailUrl")?.value,
-      audiobookCover: form.get("audiobookCover")?.value,
-
-      // Audiobook metadata
-      narrator: form.get("narrator")?.value,
-      abridged: form.get("abridged")?.value,
-      narratorLocked: form.get("narratorLocked")?.value,
-      abridgedLocked: form.get("abridgedLocked")?.value,
-
-      // Locks
-      titleLocked: form.get("titleLocked")?.value,
-      subtitleLocked: form.get("subtitleLocked")?.value,
-      authorsLocked: form.get("authorsLocked")?.value,
-      categoriesLocked: form.get("categoriesLocked")?.value,
-      moodsLocked: form.get("moodsLocked")?.value,
-      tagsLocked: form.get("tagsLocked")?.value,
-      publisherLocked: form.get("publisherLocked")?.value,
-      publishedDateLocked: form.get("publishedDateLocked")?.value,
-      isbn10Locked: form.get("isbn10Locked")?.value,
-      isbn13Locked: form.get("isbn13Locked")?.value,
-      descriptionLocked: form.get("descriptionLocked")?.value,
-      pageCountLocked: form.get("pageCountLocked")?.value,
-      languageLocked: form.get("languageLocked")?.value,
-      seriesNameLocked: form.get("seriesNameLocked")?.value,
-      seriesNumberLocked: form.get("seriesNumberLocked")?.value,
-      seriesTotalLocked: form.get("seriesTotalLocked")?.value,
-      coverLocked: form.get("coverLocked")?.value,
-      audiobookCoverLocked: form.get("audiobookCoverLocked")?.value,
-      reviewsLocked: form.get("reviewsLocked")?.value,
-      ageRating: form.get("ageRating")?.value,
-      contentRating: form.get("contentRating")?.value,
-      ageRatingLocked: form.get("ageRatingLocked")?.value,
-      contentRatingLocked: form.get("contentRatingLocked")?.value,
+      ...valuesOf(this.topLevelFields()),
+      ...locksOf([...BOOK_LOCKS, ...this.providerFields.fields()]),
+      comicMetadata: {...valuesOf(COMIC_FIELDS), ...locksOf(COMIC_FIELDS)},
 
       ...(shouldLockAllFields !== undefined && {
         allFieldsLocked: shouldLockAllFields,
       }),
     };
-
-    for (const field of this.providerFields.fields()) {
-      metadata[field.name] = form.get(field.name)?.value;
-      metadata[field.lockName] = form.get(field.lockName)?.value;
-    }
-
-    // Build comic metadata from form controls
-    const comicMetadata: Record<string, unknown> = {};
-    for (const field of ALL_COMIC_METADATA_FIELDS) {
-      const value = form.get(field.controlName)?.value;
-      if (field.type === 'array') {
-        comicMetadata[field.fetchedKey] = Array.isArray(value) ? value : [];
-      } else if (field.type === 'number') {
-        comicMetadata[field.fetchedKey] = value !== '' && value !== null ? Number(value) : null;
-      } else if (field.type === 'boolean') {
-        comicMetadata[field.fetchedKey] = value ?? null;
-      } else {
-        comicMetadata[field.fetchedKey] = value ?? '';
-      }
-    }
-    // Consolidate comic lock states to model lock keys
-    const lockGroups: Record<string, boolean> = {};
-    for (const [formKey, modelKey] of Object.entries(COMIC_FORM_TO_MODEL_LOCK)) {
-      const value = form.get(formKey)?.value ?? false;
-      if (value) {
-        lockGroups[modelKey] = true;
-      } else if (!(modelKey in lockGroups)) {
-        lockGroups[modelKey] = false;
-      }
-    }
-    for (const [modelKey, value] of Object.entries(lockGroups)) {
-      comicMetadata[modelKey] = value;
-    }
-    metadata.comicMetadata = comicMetadata;
 
     const original = this.originalMetadata;
 
@@ -647,34 +357,7 @@ export class MetadataEditorComponent implements OnInit {
       return isEmpty(current) && !isEmpty(prev);
     };
 
-    const clearFlags: MetadataClearFlags = {
-      title: wasCleared("title"),
-      subtitle: wasCleared("subtitle"),
-      authors: wasCleared("authors"),
-      categories: wasCleared("categories"),
-      moods: wasCleared("moods"),
-      tags: wasCleared("tags"),
-      publisher: wasCleared("publisher"),
-      publishedDate: wasCleared("publishedDate"),
-      isbn10: wasCleared("isbn10"),
-      isbn13: wasCleared("isbn13"),
-      description: wasCleared("description"),
-      pageCount: wasCleared("pageCount"),
-      language: wasCleared("language"),
-      seriesName: wasCleared("seriesName"),
-      seriesNumber: wasCleared("seriesNumber"),
-      seriesTotal: wasCleared("seriesTotal"),
-      narrator: wasCleared("narrator"),
-      abridged: wasCleared("abridged"),
-      audiobookCover: wasCleared("audiobookCover"),
-      cover: false,
-      ageRating: wasCleared("ageRating"),
-      contentRating: wasCleared("contentRating"),
-    };
-
-    for (const field of this.providerFields.fields()) {
-      clearFlags[field.name] = wasCleared(field.name);
-    }
+    const clearFlags: MetadataClearFlags = Object.fromEntries(this.topLevelFields().map(field => [field.name, wasCleared(field.name)]));
 
     return {metadata, clearFlags};
   }
@@ -982,14 +665,6 @@ export class MetadataEditorComponent implements OnInit {
 
   isAudiobook(book: Book): boolean {
     return book.primaryFile?.bookType === 'AUDIOBOOK';
-  }
-
-  isEmbeddable(controlName: string, book: Book): boolean {
-    return isFieldEmbeddable(book.primaryFile?.bookType, controlName, this.providerFieldNames());
-  }
-
-  hasWriter(book: Book): boolean {
-    return hasMetadataWriter(book.primaryFile?.bookType);
   }
 
   getUploadAudiobookCoverUrl(): string {

@@ -1,70 +1,58 @@
 import {Service} from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
-import {ALL_COMIC_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, MetadataFieldConfig} from './metadata-field.config';
+import type {MetadataField, MetadataFieldValueType} from './metadata-fields';
+
+export type MetadataFormValue = string | number | boolean | readonly string[] | null | undefined;
+
+export function toFormValue(field: MetadataField, value: MetadataFormValue): MetadataFormValue {
+  if (field.valueType !== 'array') return value ?? null;
+  return typeof value === 'object' && value !== null ? [...value] : [];
+}
+
+export function readFormValue(form: FormGroup, field: MetadataField): MetadataFormValue {
+  const value: unknown = form.get(field.name)?.value;
+  switch (field.valueType) {
+    case 'array':
+      return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+    case 'number':
+      return (typeof value === 'number' || typeof value === 'string') && value !== '' && !Number.isNaN(Number(value)) ? Number(value) : null;
+    case 'boolean':
+      return typeof value === 'boolean' ? value : null;
+    default:
+      return typeof value === 'string' ? value : null;
+  }
+}
+
+export function emptyFormValue(valueType: MetadataFieldValueType): MetadataFormValue {
+  switch (valueType) {
+    case 'array':
+      return [];
+    case 'number':
+    case 'boolean':
+      return null;
+    default:
+      return '';
+  }
+}
 
 @Service()
 export class MetadataFormBuilder {
 
-  buildForm(
-    includeLockedControls: boolean,
-    fields: MetadataFieldConfig[]
-  ): FormGroup {
+  buildForm(fields: readonly MetadataField[]): FormGroup {
     const controls: Record<string, FormControl> = {};
 
     for (const field of fields) {
-      const defaultValue = this.getDefaultValue(field.type);
-      controls[field.controlName] = new FormControl(defaultValue);
-
-      if (includeLockedControls) {
-        controls[field.lockedKey] = new FormControl(false);
-      }
-    }
-
-    // Add audiobook-specific metadata fields
-    for (const field of AUDIOBOOK_METADATA_FIELDS) {
-      const defaultValue = this.getDefaultValue(field.type);
-      controls[field.controlName] = new FormControl(defaultValue);
-      if (includeLockedControls) {
-        controls[field.lockedKey] = new FormControl(false);
-      }
-    }
-
-    // Add comic book metadata fields
-    for (const field of ALL_COMIC_METADATA_FIELDS) {
-      const defaultValue = this.getDefaultValue(field.type);
-      controls[field.controlName] = new FormControl(defaultValue);
-      if (includeLockedControls) {
-        controls[field.lockedKey] = new FormControl(false);
-      }
-    }
-
-    controls['thumbnailUrl'] = new FormControl('');
-    controls['audiobookThumbnailUrl'] = new FormControl('');
-    if (includeLockedControls) {
-      controls['coverLocked'] = new FormControl(false);
-      controls['audiobookCoverLocked'] = new FormControl(false);
+      controls[field.name] = new FormControl(emptyFormValue(field.valueType));
+      controls[field.lockName] = new FormControl(false);
     }
 
     return new FormGroup(controls);
   }
 
-  private getDefaultValue(type: string): unknown {
-    switch (type) {
-      case 'array':
-        return [];
-      case 'number':
-        return null;
-      case 'boolean':
-        return null;
-      default:
-        return '';
-    }
-  }
-
   applyLockStates(
     metadataForm: FormGroup,
     lockedFields: Record<string, boolean>,
-    fields: MetadataFieldConfig[]
+    fields: readonly MetadataField[]
   ): void {
     for (const key of Object.keys(metadataForm.controls)) {
       if (!key.endsWith('Locked')) {
@@ -72,24 +60,9 @@ export class MetadataFormBuilder {
       }
     }
 
-    // Apply locks for standard fields
     for (const field of fields) {
-      if (lockedFields[field.lockedKey]) {
-        metadataForm.get(field.controlName)?.disable({emitEvent: false});
-      }
-    }
-
-    // Apply locks for audiobook metadata fields
-    for (const field of AUDIOBOOK_METADATA_FIELDS) {
-      if (lockedFields[field.lockedKey]) {
-        metadataForm.get(field.controlName)?.disable({emitEvent: false});
-      }
-    }
-
-    // Apply locks for comic book metadata fields
-    for (const field of ALL_COMIC_METADATA_FIELDS) {
-      if (lockedFields[field.lockedKey]) {
-        metadataForm.get(field.controlName)?.disable({emitEvent: false});
+      if (lockedFields[field.lockName]) {
+        metadataForm.get(field.name)?.disable({emitEvent: false});
       }
     }
   }

@@ -46,9 +46,9 @@
             <div class="field-row cover-field-row">
               <span class="field-label">
                 @if (currentBook && supportsDualCovers(currentBook)) {
-                  <i class="pi pi-book cover-type-icon"></i> {{ t('coverLabelEbook') }}
+                  <i class="pi pi-book cover-type-icon"></i> {{ fieldLabels.label('ebookCover') }}
                 } @else {
-                  {{ t('coverLabel') }}
+                  {{ fieldLabels.label('cover') }}
                 }
               </span>
               <div class="field-content">
@@ -110,7 +110,7 @@
           @if (currentBook && hasAudiobookFormat(currentBook)) {
             <div class="field-row cover-field-row audiobook-cover-row">
               <span class="field-label">
-                <i class="pi pi-headphones cover-type-icon"></i> {{ t('coverLabelAudiobook') }}
+                <i class="pi pi-headphones cover-type-icon"></i> {{ fieldLabels.label('audiobookCover') }}
               </span>
               <div class="field-content">
                 <div class="field-side current cover-side">
@@ -180,295 +180,142 @@
         </div>
       </section>
 
-      <!-- Basic Information Section -->
-      <section class="form-section">
-        <div class="section-header">
-          <i class="pi pi-info-circle"></i>
-          <span>{{ t('sectionBasicInfo') }}</span>
-        </div>
-
-        <div class="section-content">
-          @for (field of metadataFieldsTop; track field) {
-            <div class="field-row">
-              <span class="field-label">{{ field.label }}</span>
-              <div class="field-content">
-                <div class="field-side current">
-                  <button
-                    type="button"
-                    class="lock-btn"
-                    [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                    (click)="toggleLock(field.controlName)"
-                  >
-                    <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                  </button>
-                  @if (field.controlName === 'publishedDate') {
-                    <input pInputText formControlName="{{field.controlName}}" class="field-input" placeholder="YYYY-MM-DD"/>
-                  } @else {
-                    <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
-                  }
-                </div>
-
-                <button
-                  type="button"
-                  class="transfer-btn"
-                  [class.saved]="isValueSaved(field.controlName)"
-                  [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                  [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                  (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                  (mouseenter)="onMouseEnter(field.controlName)"
-                  (mouseleave)="onMouseLeave(field.controlName)"
-                >
-                  <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                </button>
-
-                <div class="field-side fetched">
-                  <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-
-      <!-- Tags & Categories Section -->
-      <section class="form-section">
-        <div class="section-header">
-          <i class="pi pi-tags"></i>
-          <span>{{ t('sectionTagsCategories') }}</span>
-        </div>
-
-        <div class="section-content">
-          @for (field of metadataChips; track field) {
-            <div class="field-row">
-              <span class="field-label">{{ field.label }}</span>
-              <div class="field-content">
-                <div class="field-side current">
-                  <button
-                    type="button"
-                    class="lock-btn"
-                    [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                    (click)="toggleLock(field.controlName)"
-                  >
-                    <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                  </button>
-                  @if (field.controlName === 'authors') {
-                    <div class="author-chips-container" [class.disabled]="metadataForm.get('authors')?.disabled"
-                         cdkDropList cdkDropListOrientation="mixed"
-                         [cdkDropListDisabled]="metadataForm.get('authors')?.disabled"
-                         (cdkDropListDropped)="dropAuthor($event)">
-                      @for (author of metadataForm.get('authors')!.value; track $index) {
-                        <span class="author-chip" [class.main-author]="$index === 0" cdkDrag>
-                          @if ($index === 0) { <span class="main-author-badge">m</span> }
-                          {{ author }}
-                          @if (!metadataForm.get('authors')?.disabled) {
-                            <i
-                              class="pi pi-times author-chip-remove"
-                              role="button"
-                              tabindex="0"
-                              (click)="removeAuthor($index)"
-                              (keydown.enter)="removeAuthor($index)"></i>
-                          }
-                        </span>
-                      }
+      <ng-template #fieldRow appPickerFieldRow let-field let-fetched="fetched">
+        <div class="field-row" [class.textarea-row]="field.valueType === 'text'">
+          <span class="field-label">{{ fieldLabels.label(field.name) }}</span>
+          <div class="field-content">
+            <div class="field-side current">
+              <button
+                type="button"
+                class="lock-btn"
+                [class.locked]="metadataForm.get(field.lockName)?.value"
+                (click)="toggleLock(field.name)"
+              >
+                <i [class]="metadataForm.get(field.lockName)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+              </button>
+              @if (field.name === 'authors') {
+                <div class="author-chips-container" [class.disabled]="metadataForm.get('authors')?.disabled"
+                     cdkDropList cdkDropListOrientation="mixed"
+                     [cdkDropListDisabled]="metadataForm.get('authors')?.disabled"
+                     (cdkDropListDropped)="dropAuthor($event)">
+                  @for (author of metadataForm.get('authors')!.value; track $index) {
+                    <span class="author-chip" [class.main-author]="$index === 0" cdkDrag>
+                      @if ($index === 0) { <span class="main-author-badge">m</span> }
+                      {{ author }}
                       @if (!metadataForm.get('authors')?.disabled) {
-                        <p-autoComplete
-                          class="author-add-input"
-                          [(ngModel)]="authorInputValue"
-                          [ngModelOptions]="{ standalone: true }"
-                          appFacetSuggestions="author"
-                          [forceSelection]="false"
-                          [dropdown]="false"
-                          (onKeyUp)="onAuthorInputKeyUp($event)"
-                          (onSelect)="onAuthorInputSelect($event)"
-                          placeholder="Add author..."
-                        />
+                        <i
+                          class="pi pi-times author-chip-remove"
+                          role="button"
+                          tabindex="0"
+                          (click)="removeAuthor($index)"
+                          (keydown.enter)="removeAuthor($index)"></i>
                       }
-                    </div>
-                  } @else {
+                    </span>
+                  }
+                  @if (!metadataForm.get('authors')?.disabled) {
                     <p-autoComplete
-                      class="chips-input"
-                      formControlName="{{field.controlName}}"
-                      [multiple]="true"
-                      [dropdown]="false"
+                      class="author-add-input"
+                      [(ngModel)]="authorInputValue"
+                      [ngModelOptions]="{ standalone: true }"
+                      [appFacetSuggestions]="field.suggestions"
                       [forceSelection]="false"
-                      [showClear]="true"
-                      [appFacetSuggestions]="facetByField[field.controlName]"
-                      (onKeyUp)="onAutoCompleteKeyUp(field.controlName, $event)"
-                      (onSelect)="onAutoCompleteSelect(field.controlName, $event)"
+                      [dropdown]="false"
+                      (onKeyUp)="onAuthorInputKeyUp($event)"
+                      (onSelect)="onAuthorInputSelect($event)"
+                      placeholder="Add author..."
                     />
                   }
                 </div>
-
-                <button
-                  type="button"
-                  class="transfer-btn"
-                  [class.saved]="isValueSaved(field.controlName)"
-                  [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                  [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                  (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                  (mouseenter)="onMouseEnter(field.controlName)"
-                  (mouseleave)="onMouseLeave(field.controlName)"
-                >
-                  <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                </button>
-
-                <div class="field-side fetched">
-                  <p-autoComplete
-                    [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
-                    [ngModelOptions]="{ standalone: true }"
-                    [disabled]="true"
-                    [multiple]="true"
-                    [typeahead]="false"
-                    [dropdown]="false"
-                    [forceSelection]="false"
-                    class="chips-input readonly"
-                  />
-                </div>
-              </div>
+              } @else if (field.valueType === 'array') {
+                <p-autoComplete
+                  class="chips-input"
+                  [formControlName]="field.name"
+                  [multiple]="true"
+                  [dropdown]="false"
+                  [forceSelection]="false"
+                  [showClear]="true"
+                  [appFacetSuggestions]="field.suggestions"
+                  (onKeyUp)="onAutoCompleteKeyUp(field.name, $event)"
+                  (onSelect)="onAutoCompleteSelect(field.name, $event)"
+                />
+              } @else if (field.valueType === 'text') {
+                <textarea pTextarea [formControlName]="field.name" class="field-textarea" rows="4"></textarea>
+              } @else if (field.valueType === 'boolean') {
+                <p-checkbox [formControlName]="field.name" [binary]="true" class="field-checkbox" />
+              } @else if (field.valueType === 'date') {
+                <input pInputText [formControlName]="field.name" class="field-input" placeholder="YYYY-MM-DD"/>
+              } @else if (field.suggestions) {
+                <p-autoComplete
+                  class="field-input"
+                  [fluid]="true"
+                  [formControlName]="field.name"
+                  [dropdown]="false"
+                  [forceSelection]="false"
+                  [appFacetSuggestions]="field.suggestions"
+                />
+              } @else {
+                <input pInputText [formControlName]="field.name" class="field-input"/>
+              }
             </div>
-          }
-        </div>
-      </section>
 
-      <!-- Description Section -->
-      <section class="form-section">
-        <div class="section-header">
-          <i class="pi pi-align-left"></i>
-          <span>{{ t('sectionDescription') }}</span>
-        </div>
+            <button
+              type="button"
+              class="transfer-btn"
+              [class.saved]="isValueSaved(field.name)"
+              [class.copied]="isValueCopied(field.name) && !hoveredFields[field.name]"
+              [class.reset]="isValueCopied(field.name) && hoveredFields[field.name]"
+              (click)="hoveredFields[field.name] && isValueCopied(field.name) ? resetField(field.name) : copyFetchedToCurrent(field.name)"
+              (mouseenter)="onMouseEnter(field.name)"
+              (mouseleave)="onMouseLeave(field.name)"
+            >
+              <i [class]="isValueSaved(field.name) ? 'pi pi-check' : (hoveredFields[field.name] && isValueCopied(field.name) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+            </button>
 
-        <div class="section-content">
-          @for (field of metadataDescription; track field) {
-            <div class="field-row textarea-row">
-              <span class="field-label">{{ field.label }}</span>
-              <div class="field-content">
-                <div class="field-side current">
-                  <button
-                    type="button"
-                    class="lock-btn"
-                    [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                    (click)="toggleLock(field.controlName)"
-                  >
-                    <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                  </button>
-                  <textarea pTextarea formControlName="{{field.controlName}}" class="field-textarea" rows="4"></textarea>
-                </div>
-
-                <button
-                  type="button"
-                  class="transfer-btn"
-                  [class.saved]="isValueSaved(field.controlName)"
-                  [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                  [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                  (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                  (mouseenter)="onMouseEnter(field.controlName)"
-                  (mouseleave)="onMouseLeave(field.controlName)"
-                >
-                  <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                </button>
-
-                <div class="field-side fetched">
-                  <textarea pTextarea [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-textarea" rows="4" readonly></textarea>
-                </div>
-              </div>
+            <div class="field-side fetched">
+              @if (field.valueType === 'array') {
+                <p-autoComplete
+                  [ngModel]="fetched ?? []"
+                  [ngModelOptions]="{ standalone: true }"
+                  [disabled]="true"
+                  [multiple]="true"
+                  [typeahead]="false"
+                  [dropdown]="false"
+                  [forceSelection]="false"
+                  class="chips-input readonly"
+                />
+              } @else if (field.valueType === 'text') {
+                <textarea pTextarea [value]="fetched ?? ''" class="field-textarea" rows="4" readonly></textarea>
+              } @else if (field.valueType === 'boolean') {
+                <p-checkbox
+                  [ngModel]="fetched"
+                  [ngModelOptions]="{ standalone: true }"
+                  [binary]="true"
+                  [disabled]="true"
+                  class="field-checkbox"
+                />
+              } @else {
+                <input pInputText [value]="fetched ?? ''" class="field-input" readonly/>
+              }
             </div>
-          }
+          </div>
         </div>
-      </section>
+      </ng-template>
 
-      <!-- Series Information Section -->
-      <section class="form-section">
-        <div class="section-header">
-          <i class="pi pi-book"></i>
-          <span>{{ t('sectionSeriesInfo') }}</span>
-        </div>
+      @for (section of bookSections; track section.titleKey) {
+        <section class="form-section">
+          <div class="section-header">
+            <i [class]="'pi ' + section.icon"></i>
+            <span>{{ t(section.titleKey) }}</span>
+          </div>
 
-        <div class="section-content">
-          @for (field of metadataSeriesFields; track field) {
-            <div class="field-row">
-              <span class="field-label">{{ field.label }}</span>
-              <div class="field-content">
-                <div class="field-side current">
-                  <button
-                    type="button"
-                    class="lock-btn"
-                    [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                    (click)="toggleLock(field.controlName)"
-                  >
-                    <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                  </button>
-                  <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
-                </div>
+          <div class="section-content">
+            @for (field of section.fields; track field.name) {
+              <ng-container *ngTemplateOutlet="fieldRow; context: {$implicit: field, fetched: fetchedMetadata[field.name]}" />
+            }
+          </div>
+        </section>
+      }
 
-                <button
-                  type="button"
-                  class="transfer-btn"
-                  [class.saved]="isValueSaved(field.controlName)"
-                  [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                  [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                  (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                  (mouseenter)="onMouseEnter(field.controlName)"
-                  (mouseleave)="onMouseLeave(field.controlName)"
-                >
-                  <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                </button>
-
-                <div class="field-side fetched">
-                  <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-
-      <!-- Book Details Section -->
-      <section class="form-section">
-        <div class="section-header">
-          <i class="pi pi-id-card"></i>
-          <span>{{ t('sectionBookDetails') }}</span>
-        </div>
-
-        <div class="section-content">
-          @for (field of metadataBookDetailsFields; track field) {
-            <div class="field-row">
-              <span class="field-label">{{ field.label }}</span>
-              <div class="field-content">
-                <div class="field-side current">
-                  <button
-                    type="button"
-                    class="lock-btn"
-                    [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                    (click)="toggleLock(field.controlName)"
-                  >
-                    <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                  </button>
-                  <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
-                </div>
-
-                <button
-                  type="button"
-                  class="transfer-btn"
-                  [class.saved]="isValueSaved(field.controlName)"
-                  [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                  [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                  (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                  (mouseenter)="onMouseEnter(field.controlName)"
-                  (mouseleave)="onMouseLeave(field.controlName)"
-                >
-                  <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                </button>
-
-                <div class="field-side fetched">
-                  <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-
-      <!-- Comic Book Details Section -->
       @if (shouldShowComicSection()) {
         <section class="form-section">
           <div
@@ -479,7 +326,7 @@
             (keydown.enter)="comicSectionExpanded = !comicSectionExpanded">
             <i class="pi pi-bolt"></i>
             <span>{{ t('sectionComicDetails') }}</span>
-            @if (!hasAnyFetchedComicData() && !hasAnyCurrentComicData()) {
+            @if (!hasComicData(fetchedMetadata?.comicMetadata) && !hasComicData(book?.metadata?.comicMetadata)) {
               <span class="section-empty-badge">{{ t('nonePresent') }}</span>
             }
             <i [class]="comicSectionExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="section-toggle"></i>
@@ -487,159 +334,14 @@
 
           @if (comicSectionExpanded) {
             <div class="section-content">
-              <!-- Comic text/number/boolean fields -->
-              @for (field of comicTextFields; track field) {
-                <div class="field-row">
-                  <span class="field-label">{{ field.label }}</span>
-                  <div class="field-content">
-                    <div class="field-side current">
-                      <button
-                        type="button"
-                        class="lock-btn"
-                        [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                        (click)="toggleLock(field.controlName)"
-                      >
-                        <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                      </button>
-                      @if (field.type === 'boolean') {
-                        <p-checkbox
-                          formControlName="{{field.controlName}}"
-                          [binary]="true"
-                          class="field-checkbox"
-                        />
-                      } @else {
-                        <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
-                      }
-                    </div>
-
-                    <button
-                      type="button"
-                      class="transfer-btn"
-                      [class.saved]="isValueSaved(field.controlName)"
-                      [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                      [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                      (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                      (mouseenter)="onMouseEnter(field.controlName)"
-                      (mouseleave)="onMouseLeave(field.controlName)"
-                    >
-                      <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                    </button>
-
-                    <div class="field-side fetched">
-                      @if (field.type === 'boolean') {
-                        <p-checkbox
-                          [ngModel]="getFetchedComicValue(field.fetchedKey)"
-                          [ngModelOptions]="{ standalone: true }"
-                          [binary]="true"
-                          [disabled]="true"
-                          class="field-checkbox"
-                        />
-                      } @else {
-                        <input pInputText [value]="getFetchedComicValue(field.fetchedKey) ?? ''" class="field-input" readonly/>
-                      }
-                    </div>
-                  </div>
-                </div>
-              }
-
-              <!-- Comic array fields (creators, characters, teams, locations) -->
-              @for (field of comicArrayFields; track field) {
-                <div class="field-row">
-                  <span class="field-label">{{ field.label }}</span>
-                  <div class="field-content">
-                    <div class="field-side current">
-                      <button
-                        type="button"
-                        class="lock-btn"
-                        [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                        (click)="toggleLock(field.controlName)"
-                      >
-                        <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                      </button>
-                      <p-autoComplete
-                        class="chips-input"
-                        formControlName="{{field.controlName}}"
-                        [multiple]="true"
-                        [dropdown]="false"
-                        [forceSelection]="false"
-                        [showClear]="true"
-                        [typeahead]="false"
-                        (onKeyUp)="onAutoCompleteKeyUp(field.controlName, $event)"
-                        (onSelect)="onAutoCompleteSelect(field.controlName, $event)"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      class="transfer-btn"
-                      [class.saved]="isValueSaved(field.controlName)"
-                      [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                      [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                      (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                      (mouseenter)="onMouseEnter(field.controlName)"
-                      (mouseleave)="onMouseLeave(field.controlName)"
-                    >
-                      <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                    </button>
-
-                    <div class="field-side fetched">
-                      <p-autoComplete
-                        [ngModel]="getFetchedComicValue(field.fetchedKey) ?? []"
-                        [ngModelOptions]="{ standalone: true }"
-                        [disabled]="true"
-                        [multiple]="true"
-                        [typeahead]="false"
-                        [dropdown]="false"
-                        [forceSelection]="false"
-                        class="chips-input readonly"
-                      />
-                    </div>
-                  </div>
-                </div>
-              }
-
-              <!-- Comic textarea fields (notes) -->
-              @for (field of comicTextareaFields; track field) {
-                <div class="field-row textarea-row">
-                  <span class="field-label">{{ field.label }}</span>
-                  <div class="field-content">
-                    <div class="field-side current">
-                      <button
-                        type="button"
-                        class="lock-btn"
-                        [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                        (click)="toggleLock(field.controlName)"
-                      >
-                        <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                      </button>
-                      <textarea pTextarea formControlName="{{field.controlName}}" class="field-textarea" rows="3"></textarea>
-                    </div>
-
-                    <button
-                      type="button"
-                      class="transfer-btn"
-                      [class.saved]="isValueSaved(field.controlName)"
-                      [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                      [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                      (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                      (mouseenter)="onMouseEnter(field.controlName)"
-                      (mouseleave)="onMouseLeave(field.controlName)"
-                    >
-                      <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                    </button>
-
-                    <div class="field-side fetched">
-                      <textarea pTextarea [value]="getFetchedComicValue(field.fetchedKey) ?? ''" class="field-textarea" rows="3" readonly></textarea>
-                    </div>
-                  </div>
-                </div>
+              @for (field of comicFields; track field.name) {
+                <ng-container *ngTemplateOutlet="fieldRow; context: {$implicit: field, fetched: getFetchedComicValue(field.name)}" />
               }
             </div>
           }
         </section>
       }
 
-      <!-- Audiobook Details Section -->
       @if (currentBook && hasAudiobookFormat(currentBook)) {
         <section class="form-section">
           <div class="section-header">
@@ -648,64 +350,13 @@
           </div>
 
           <div class="section-content">
-            @for (field of audiobookMetadataFields; track field) {
-              <div class="field-row">
-                <span class="field-label">{{ field.label }}</span>
-                <div class="field-content">
-                  <div class="field-side current">
-                    <button
-                      type="button"
-                      class="lock-btn"
-                      [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                      (click)="toggleLock(field.controlName)"
-                    >
-                      <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                    </button>
-                    @if (field.type === 'boolean') {
-                      <p-checkbox
-                        formControlName="{{field.controlName}}"
-                        [binary]="true"
-                        class="field-checkbox"
-                      />
-                    } @else {
-                      <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
-                    }
-                  </div>
-
-                  <button
-                    type="button"
-                    class="transfer-btn"
-                    [class.saved]="isValueSaved(field.controlName)"
-                    [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                    [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                    (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                    (mouseenter)="onMouseEnter(field.controlName)"
-                    (mouseleave)="onMouseLeave(field.controlName)"
-                  >
-                    <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                  </button>
-
-                  <div class="field-side fetched">
-                    @if (field.type === 'boolean') {
-                      <p-checkbox
-                        [ngModel]="getFetchedAudiobookValue(field.fetchedKey)"
-                        [ngModelOptions]="{ standalone: true }"
-                        [binary]="true"
-                        [disabled]="true"
-                        class="field-checkbox"
-                      />
-                    } @else {
-                      <input pInputText [value]="getFetchedAudiobookValue(field.fetchedKey) ?? ''" class="field-input" readonly/>
-                    }
-                  </div>
-                </div>
-              </div>
+            @for (field of audiobookMetadataFields; track field.name) {
+              <ng-container *ngTemplateOutlet="fieldRow; context: {$implicit: field, fetched: fetchedMetadata[field.name]}" />
             }
           </div>
         </section>
       }
 
-      <!-- Provider Metadata Section -->
       @if (metadataProviderFields().length > 0) {
         <section class="form-section">
           <div class="section-header">
@@ -714,40 +365,8 @@
           </div>
 
           <div class="section-content">
-            @for (field of metadataProviderFields(); track field) {
-              <div class="field-row">
-                <span class="field-label">{{ providerFields.label(field.providerKey!) }}</span>
-                <div class="field-content">
-                  <div class="field-side current">
-                    <button
-                      type="button"
-                      class="lock-btn"
-                      [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                      (click)="toggleLock(field.controlName)"
-                    >
-                      <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                    </button>
-                    <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
-                  </div>
-
-                  <button
-                    type="button"
-                    class="transfer-btn"
-                    [class.saved]="isValueSaved(field.controlName)"
-                    [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                    [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                    (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                    (mouseenter)="onMouseEnter(field.controlName)"
-                    (mouseleave)="onMouseLeave(field.controlName)"
-                  >
-                    <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                  </button>
-
-                  <div class="field-side fetched">
-                    <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
-                  </div>
-                </div>
-              </div>
+            @for (field of metadataProviderFields(); track field.name) {
+              <ng-container *ngTemplateOutlet="fieldRow; context: {$implicit: field, fetched: fetchedMetadata[field.name]}" />
             }
           </div>
         </section>

@@ -53,34 +53,35 @@
   padding: 0.875rem;
 }
 
-.form-row {
+.field-list {
   display: flex;
-  justify-content: space-between;
-  gap: 1.5313rem;
+  flex-wrap: wrap;
+  gap: 0.875rem 1.5313rem;
 }
 
 .field-group {
   display: flex;
+  flex: 1 1 100%;
   flex-direction: column;
   gap: 0.4375rem;
+  min-width: 0;
+}
 
-  &--wide {
-    width: 100%;
-
-    @media (width >= 768px) {
-      flex-basis: 80%;
-    }
+@media (width >= 768px) {
+  [data-field='publisher'],
+  [data-field='seriesName'] {
+    flex-basis: 60%;
   }
 
-  &--narrow {
-    @media (width >= 768px) {
-      flex-basis: 20%;
-    }
+  [data-field='publishedDate'],
+  [data-field='seriesTotal'] {
+    flex-basis: 20%;
   }
 
-  &--half {
-    flex: 1;
-    min-width: 0;
+  [data-field='language'],
+  [data-field='ageRating'],
+  [data-field='contentRating'] {
+    flex-basis: 25%;
   }
 }
 

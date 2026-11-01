@@ -1920,15 +1920,7 @@
       "enableField": "Enable {{ label }}",
       "mergeOption": "Merge",
       "replaceOption": "Replace",
-      "applyToSelected": "Apply to Selected",
-      "seriesName": "Series Name",
-      "publisher": "Publisher",
-      "language": "Language",
-      "seriesTotal": "Series Total",
-      "authors": "Authors",
-      "genres": "Genres",
-      "moods": "Moods",
-      "tags": "Tags"
+      "applyToSelected": "Apply to Selected"
     },
     "metadataPicker": {
       "fileData": "File Data",
@@ -2647,6 +2639,7 @@
       "manualReviewLabel": "Manual review:",
       "manualReviewTooltip": "Review and approve metadata changes before saving",
       "resetForm": "Reset Form",
+      "fieldFromProvider": "{{ field }} ({{ provider }})",
       "toast": {
         "providerRequiredSummary": "Error",
         "providerRequiredDetail": "At least one provider (P1-P4) must be selected for each enabled book field."

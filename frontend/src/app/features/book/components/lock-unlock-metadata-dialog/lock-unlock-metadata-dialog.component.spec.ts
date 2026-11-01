@@ -73,10 +73,10 @@ describe('LockUnlockMetadataDialogComponent', () => {
     const component = createComponent();
 
     component.toggleLockAll('LOCK');
-    expect(component.lockableFields.every(field => component.fieldLocks[field] === true)).toBe(true);
+    expect(component.locks.every(lock => component.fieldLocks[lock.lockName] === true)).toBe(true);
 
     component.toggleLockAll('UNLOCK');
-    expect(component.lockableFields.every(field => component.fieldLocks[field] === false)).toBe(true);
+    expect(component.locks.every(lock => component.fieldLocks[lock.lockName] === false)).toBe(true);
   });
 
   it('returns translated labels and icons for unselected, locked, and unlocked states', () => {
@@ -100,7 +100,7 @@ describe('LockUnlockMetadataDialogComponent', () => {
 
     component.resetFieldLocks();
 
-    expect(component.lockableFields.every(field => component.fieldLocks[field] === undefined)).toBe(true);
+    expect(component.locks.every(lock => component.fieldLocks[lock.lockName] === undefined)).toBe(true);
   });
 
   it('cycles a field through locked, unlocked, and cleared states', () => {

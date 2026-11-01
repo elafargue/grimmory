@@ -9,7 +9,7 @@ import {Divider} from '@openng/optimus-ui/divider';
 import {LoadingService} from '../../../../core/services/loading.service';
 import {finalize} from 'rxjs';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
-import {MetadataProviderFieldsService} from '../../../../shared/metadata';
+import {BOOK_LOCKS, MetadataFieldLabelService, MetadataProviderFieldsService, type BookLockName, type MetadataLock, type MetadataProviderField} from '../../../../shared/metadata';
 
 @Component({
   selector: 'app-lock-unlock-metadata-dialog',
@@ -31,53 +31,23 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
   private readonly loadingService = inject(LoadingService);
   private readonly t = inject(TranslocoService);
   private readonly providerFields = inject(MetadataProviderFieldsService);
+  protected readonly fieldLabels = inject(MetadataFieldLabelService);
   fieldLocks: Record<string, boolean | undefined> = {};
 
   bookIds: Set<number> = this.dynamicDialogConfig.data.bookIds;
 
-  lockableFields: string[] = [
-    'titleLocked', 'subtitleLocked', 'publisherLocked', 'publishedDateLocked', 'descriptionLocked',
-    'isbn13Locked', 'isbn10Locked', 'pageCountLocked', 'thumbnailLocked', 'languageLocked', 'coverLocked',
-    'seriesNameLocked', 'seriesNumberLocked', 'seriesTotalLocked', 'authorsLocked', 'categoriesLocked', 'moodsLocked', 'tagsLocked',
-    ...this.providerFields.fields().map(field => field.lockName),
-  ];
-
-  fieldLabels: Record<string, string> = {
-    titleLocked: 'Title',
-    subtitleLocked: 'Subtitle',
-    publisherLocked: 'Publisher',
-    publishedDateLocked: 'Date',
-    descriptionLocked: 'Description',
-    isbn13Locked: 'ISBN-13',
-    isbn10Locked: 'ISBN-10',
-    pageCountLocked: 'Page Count',
-    thumbnailLocked: 'Thumbnail',
-    languageLocked: 'Language',
-    coverLocked: 'Cover',
-    seriesNameLocked: 'Series',
-    seriesNumberLocked: 'Series #',
-    seriesTotalLocked: 'Series Total #',
-    authorsLocked: 'Authors',
-    categoriesLocked: 'Genres',
-    moodsLocked: 'Moods',
-    tagsLocked: 'Tags',
-  };
-
-  getFieldLabel(lockName: string): string {
-    const providerField = this.providerFields.fields().find(field => field.lockName === lockName);
-    return providerField ? this.providerFields.label(providerField.name) : this.fieldLabels[lockName] ?? lockName;
-  }
+  readonly locks: readonly (MetadataLock<BookLockName> | MetadataProviderField)[] = [...BOOK_LOCKS, ...this.providerFields.fields()];
 
   isSaving = false;
 
   ngOnInit(): void {
-    this.lockableFields.forEach(field => this.fieldLocks[field] = undefined);
+    this.locks.forEach(lock => this.fieldLocks[lock.lockName] = undefined);
   }
 
   toggleLockAll(action: 'LOCK' | 'UNLOCK'): void {
     const lockState = action === 'LOCK' ? true : false;
-    this.lockableFields.forEach(field => {
-      this.fieldLocks[field] = lockState;
+    this.locks.forEach(lock => {
+      this.fieldLocks[lock.lockName] = lockState;
     });
   }
 
@@ -93,8 +63,8 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
   }
 
   resetFieldLocks(): void {
-    this.lockableFields.forEach(field => {
-      this.fieldLocks[field] = undefined;
+    this.locks.forEach(lock => {
+      this.fieldLocks[lock.lockName] = undefined;
     });
   }
 

@@ -1,5 +1,8 @@
+import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClientTesting} from '@angular/common/http/testing';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {DynamicDialogConfig, DynamicDialogRef} from '@openng/optimus-ui/dynamicdialog';
+import {provideTanStackQuery, QueryClient} from '@tanstack/angular-query-experimental';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 import {getTranslocoModule} from '../../../../core/testing/transloco-testing';
@@ -18,6 +21,9 @@ describe('BookdropBulkEditDialogComponent', () => {
     await TestBed.configureTestingModule({
       imports: [BookdropBulkEditDialogComponent, getTranslocoModule()],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideTanStackQuery(new QueryClient()),
         {provide: DynamicDialogRef, useValue: dialogRef},
         {provide: DynamicDialogConfig, useValue: {data: {fileCount: 4}}},
       ],
@@ -37,7 +43,7 @@ describe('BookdropBulkEditDialogComponent', () => {
     const input = document.createElement('input');
     input.value = value;
 
-    component.onAutoCompleteBlur(fieldName, {target: input} as unknown as Event);
+    component.addTypedValue(fieldName, {target: input} as unknown as Event);
 
     return input;
   }

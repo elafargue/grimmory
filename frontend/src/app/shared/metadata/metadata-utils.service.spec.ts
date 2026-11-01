@@ -129,29 +129,4 @@ describe('MetadataUtilsService', () => {
     expect(copiedFields.title).toBe(false);
     expect(hoveredFields.title).toBe(false);
   });
-
-  it('patches metadata arrays as sorted values and applies lock defaults', () => {
-    const form = new FormGroup({
-      authors: new FormControl<string[]>([]),
-      authorsLocked: new FormControl(false),
-      title: new FormControl(''),
-      titleLocked: new FormControl(false),
-    });
-    const metadata = {
-      authors: ['zeta', 'alpha'],
-      authorsLocked: true,
-      title: 'Patched Title',
-      titleLocked: false,
-    } as BookMetadata;
-
-    service.patchMetadataToForm(metadata, form, [
-      {controlName: 'authors', lockedKey: 'authorsLocked', type: 'array'},
-      {controlName: 'title', lockedKey: 'titleLocked', type: 'string'},
-    ]);
-
-    expect(form.get('authors')?.value).toEqual(['alpha', 'zeta']);
-    expect(form.get('authorsLocked')?.value).toBe(true);
-    expect(form.get('title')?.value).toBe('Patched Title');
-    expect(form.get('titleLocked')?.value).toBe(false);
-  });
 });

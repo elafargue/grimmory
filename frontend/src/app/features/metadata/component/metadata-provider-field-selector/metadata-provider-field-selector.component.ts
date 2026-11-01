@@ -4,7 +4,7 @@ import {ToggleSwitch} from '@openng/optimus-ui/toggleswitch';
 import {FormsModule} from '@angular/forms';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {AppSettingKey, MetadataProviderSpecificFields} from '../../../../shared/model/app-settings.model';
-import {MetadataProviderFieldsService, providerFieldRecord} from '../../../../shared/metadata';
+import {MetadataFieldLabelService, MetadataProviderFieldsService, providerFieldRecord} from '../../../../shared/metadata';
 import {MetadataCatalogService} from '../../../../shared/metadata/metadata-catalog.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
@@ -20,6 +20,7 @@ export class MetadataProviderFieldSelectorComponent {
   private readonly t = inject(TranslocoService);
   private readonly catalog = inject(MetadataCatalogService);
   private readonly providerFields = inject(MetadataProviderFieldsService);
+  private readonly fieldLabels = inject(MetadataFieldLabelService);
   @Input() selectedFields: string[] = [];
   private readonly activeLang = toSignal(this.t.langChanges$, {initialValue: this.t.getActiveLang()});
 
@@ -31,7 +32,7 @@ export class MetadataProviderFieldSelectorComponent {
         label: this.t.translate(provider.labelKey, {}, lang),
         fields: this.providerFields.fields()
           .filter(field => field.provider === provider.id)
-          .map(field => ({name: field.name, label: this.providerFields.label(field.name)})),
+          .map(field => ({name: field.name, label: this.fieldLabels.label(field.name)})),
       }));
   });
 

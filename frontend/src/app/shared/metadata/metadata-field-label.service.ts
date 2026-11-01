@@ -18,7 +18,10 @@ export class MetadataFieldLabelService {
   label(name: MetadataFieldName | BookLockName | 'ebookCover'): string {
     const lang = this.activeLang();
     const providerField = this.providerFieldsByName().get(name);
-    if (providerField) return this.providerFields.label(providerField.name);
+    if (providerField) {
+      const provider = this.t.translate<string>(providerField.providerLabelKey, {}, lang);
+      return this.t.translate<string>(providerField.labelKey, {provider}, lang);
+    }
     return this.t.translate<string>(`metadata.fields.${name}`, {}, lang);
   }
 

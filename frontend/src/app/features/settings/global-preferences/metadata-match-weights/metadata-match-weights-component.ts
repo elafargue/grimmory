@@ -7,7 +7,7 @@ import {Button} from '@openng/optimus-ui/button';
 import {AppSettingKey, MetadataMatchWeights} from '../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {InputNumber} from '@openng/optimus-ui/inputnumber';
-import {MetadataProviderFieldsService} from '../../../../shared/metadata';
+import {MetadataFieldLabelService, MetadataProviderFieldsService} from '../../../../shared/metadata';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 const GENERIC_WEIGHT_KEYS = [
@@ -35,6 +35,7 @@ export class MetadataMatchWeightsComponent {
   private readonly messageService = inject(MessageService);
   private readonly t = inject(TranslocoService);
   private readonly providerFields = inject(MetadataProviderFieldsService);
+  private readonly fieldLabels = inject(MetadataFieldLabelService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly orderedKeys = computed(() => [
@@ -61,7 +62,7 @@ export class MetadataMatchWeightsComponent {
 
   getFieldLabel(key: string): string {
     const providerField = this.providerFields.fields().find(field => field.name === key);
-    return providerField ? this.providerFields.label(providerField.name) : this.t.translate('settingsMeta.matchWeights.fields.' + key);
+    return providerField ? this.fieldLabels.label(providerField.name) : this.t.translate('settingsMeta.matchWeights.fields.' + key);
   }
 
   save(): void {

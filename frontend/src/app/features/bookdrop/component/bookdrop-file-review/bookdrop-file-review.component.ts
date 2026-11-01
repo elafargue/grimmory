@@ -1,4 +1,4 @@
-import {Component, DestroyRef, inject, OnInit, QueryList, signal, ViewChildren} from '@angular/core';
+import {Component, computed, DestroyRef, inject, OnInit, QueryList, signal, ViewChildren} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {startWith, take, tap} from 'rxjs/operators';
 import {PageTitleService} from "../../../../shared/service/page-title.service";
@@ -21,7 +21,7 @@ import {InputGroupAddon} from '@openng/optimus-ui/inputgroupaddon';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {BookMetadata} from '../../../book/model/book.model';
 import {UrlHelperService} from '../../../../shared/service/url-helper.service';
-import {MetadataProviderFieldsService} from '../../../../shared/metadata';
+import {FETCHABLE_FIELDS, MetadataProviderFieldsService, readFormValue, toFormValue} from '../../../../shared/metadata';
 import {Checkbox} from '@openng/optimus-ui/checkbox';
 import {NgClass} from '@angular/common';
 import {Paginator} from '@openng/optimus-ui/paginator';
@@ -78,6 +78,7 @@ export class BookdropFileReviewComponent implements OnInit {
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly pageTitle = inject(PageTitleService);
   private readonly t = inject(TranslocoService);
+  private readonly metadataFields = computed(() => [...FETCHABLE_FIELDS, ...this.providerFields.fields()]);
 
   @ViewChildren('metadataPicker') metadataPickers!: QueryList<BookdropFileMetadataPickerComponent>;
 
@@ -298,24 +299,8 @@ export class BookdropFileReviewComponent implements OnInit {
     selectedFiles.forEach(fileUi => {
       const original = fileUi.file.originalMetadata;
       fileUi.metadataForm.patchValue({
-        title: original?.title || null,
-        subtitle: original?.subtitle || null,
-        authors: [...(original?.authors ?? [])].sort(),
-        categories: [...(original?.categories ?? [])].sort(),
-        moods: [...(original?.moods ?? [])].sort(),
-        tags: [...(original?.tags ?? [])].sort(),
-        publisher: original?.publisher || null,
-        publishedDate: original?.publishedDate || null,
-        isbn10: original?.isbn10 ?? null,
-        isbn13: original?.isbn13 ?? null,
-        description: original?.description ?? null,
-        pageCount: original?.pageCount ?? null,
-        language: original?.language ?? null,
-        seriesName: original?.seriesName ?? null,
-        seriesNumber: original?.seriesNumber ?? null,
-        seriesTotal: original?.seriesTotal ?? null,
+        ...Object.fromEntries(this.metadataFields().map(field => [field.name, toFormValue(field, original?.[field.name])])),
         thumbnailUrl: this.urlHelper.getBookdropCoverUrl(fileUi.file.id),
-        ...Object.fromEntries(this.providerFields.fields().map(field => [field.name, original?.[field.name] ?? null])),
       });
       fileUi.copiedFields = {};
       fileUi.savedFields = {};
@@ -505,8 +490,10 @@ export class BookdropFileReviewComponent implements OnInit {
     const selectedFiles = this.getSelectedFiles();
 
     const files = selectedFiles.map(fileUi => {
-      const rawMetadata = fileUi.metadataForm.value;
-      const metadata = {...rawMetadata};
+      const metadata = {
+        ...fileUi.metadataForm.value,
+        ...Object.fromEntries(this.metadataFields().map(field => [field.name, readFormValue(fileUi.metadataForm, field)])),
+      };
 
       if (metadata.thumbnailUrl?.includes('/api/v1/media/bookdrop')) {
         delete metadata.thumbnailUrl;
@@ -564,24 +551,8 @@ export class BookdropFileReviewComponent implements OnInit {
 
   private createMetadataForm(original: BookMetadata | undefined, bookdropFileId: number): FormGroup {
     return new FormGroup({
-      title: new FormControl(original?.title ?? ''),
-      subtitle: new FormControl(original?.subtitle ?? ''),
-      authors: new FormControl([...(original?.authors ?? [])].sort()),
-      categories: new FormControl([...(original?.categories ?? [])].sort()),
-      moods: new FormControl([...(original?.moods ?? [])].sort()),
-      tags: new FormControl([...(original?.tags ?? [])].sort()),
-      publisher: new FormControl(original?.publisher ?? ''),
-      publishedDate: new FormControl(original?.publishedDate ?? ''),
-      isbn10: new FormControl(original?.isbn10 ?? ''),
-      isbn13: new FormControl(original?.isbn13 ?? ''),
-      description: new FormControl(original?.description ?? ''),
-      pageCount: new FormControl(original?.pageCount ?? ''),
-      language: new FormControl(original?.language ?? ''),
-      seriesName: new FormControl(original?.seriesName ?? ''),
-      seriesNumber: new FormControl(original?.seriesNumber ?? ''),
-      seriesTotal: new FormControl(original?.seriesTotal ?? ''),
+      ...Object.fromEntries(this.metadataFields().map(field => [field.name, new FormControl(toFormValue(field, original?.[field.name]))])),
       thumbnailUrl: new FormControl(this.urlHelper.getBookdropCoverUrl(bookdropFileId)),
-      ...Object.fromEntries(this.providerFields.fields().map(field => [field.name, new FormControl(original?.[field.name] ?? '')])),
     });
   }
 

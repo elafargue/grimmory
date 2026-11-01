@@ -19,15 +19,15 @@
 
   <div class="dialog-content">
     <div class="fields-grid">
-      @for (field of lockableFields; track field) {
+      @for (lock of locks; track lock.lockName) {
         <div class="field-row">
-          <span class="field-label">{{ getFieldLabel(field) }}</span>
+          <span class="field-label">{{ fieldLabels.label(lock.name) }}</span>
           <p-button
             [outlined]="true"
-            [label]="getLockLabel(field)"
-            [icon]="getLockIcon(field)"
-            [severity]="fieldLocks[field] === true ? 'danger' : fieldLocks[field] === false ? 'success' : 'secondary'"
-            (click)="cycleLockState(field)"
+            [label]="getLockLabel(lock.lockName)"
+            [icon]="getLockIcon(lock.lockName)"
+            [severity]="fieldLocks[lock.lockName] === true ? 'danger' : fieldLocks[lock.lockName] === false ? 'success' : 'secondary'"
+            (click)="cycleLockState(lock.lockName)"
           />
         </div>
       }

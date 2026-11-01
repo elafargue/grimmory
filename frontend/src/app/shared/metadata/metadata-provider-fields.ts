@@ -6,19 +6,18 @@ import type {
   MetadataProviderRatingFieldName,
   MetadataProviderReviewCountFieldName,
 } from './metadata-providers';
+import type {MetadataField} from './metadata-fields';
 
 export type MetadataProviderFieldRecord<T> = Record<MetadataProviderFieldName, T>;
 
 export type MetadataProviderFieldRole = 'id' | 'rating' | 'reviewCount';
 
-interface ProviderFieldOf<Name extends MetadataProviderFieldName, Role extends MetadataProviderFieldRole> {
-  readonly name: Name;
+interface ProviderFieldOf<Name extends MetadataProviderFieldName, Role extends MetadataProviderFieldRole> extends MetadataField<Name> {
   readonly provider: MetadataProviderId;
+  readonly labelKey: string;
   readonly providerLabelKey: string;
   readonly role: Role;
-  readonly lockName: `${Name}Locked`;
   readonly valueType: 'string' | 'number';
-  readonly labelKey: string;
 }
 
 export type MetadataProviderScoreField =

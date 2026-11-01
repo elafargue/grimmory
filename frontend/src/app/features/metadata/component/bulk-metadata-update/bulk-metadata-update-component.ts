@@ -10,12 +10,19 @@ import {MessageService} from '@openng/optimus-ui/api';
 import {FacetSuggestionsDirective} from '../../../book/components/facet-suggestions.directive';
 import {BookMetadataManageService} from '../../../book/service/book-metadata-manage.service';
 import {BulkMetadataUpdateRequest} from '../../../book/model/book.model';
-import {AGE_RATING_OPTIONS, CONTENT_RATING_LABELS} from '../../../book/model/book-value-labels';
 import {Checkbox} from '@openng/optimus-ui/checkbox';
 import {AutoComplete} from '@openng/optimus-ui/autocomplete';
 import {AutoCompleteSelectEvent} from '@openng/optimus-ui/autocomplete';
 import {ProgressSpinner} from '@openng/optimus-ui/progressspinner';
 import {Select} from '@openng/optimus-ui/select';
+import {bookFieldsNamed, MetadataFieldLabelService} from '../../../../shared/metadata';
+
+const BULK_FIELDS = bookFieldsNamed([
+  'authors', 'publisher', 'publishedDate', 'categories', 'moods', 'tags',
+  'seriesName', 'seriesTotal', 'language', 'ageRating', 'contentRating',
+]);
+
+type BulkFieldName = (typeof BULK_FIELDS)[number]['name'];
 
 @Component({
   selector: 'app-bulk-metadata-update-component',
@@ -43,51 +50,28 @@ export class BulkMetadataUpdateComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly bookMetadataManageService = inject(BookMetadataManageService);
   private readonly messageService = inject(MessageService);
+  protected readonly fieldLabels = inject(MetadataFieldLabelService);
   metadataForm!: FormGroup;
   bookIds: number[] = [];
-  mergeCategories = true;
-  mergeMoods = true;
-  mergeTags = true;
   loading = false;
   selectedCoverFile: File | null = null;
 
-  clearFields = {
-    authors: false,
-    publisher: false,
-    language: false,
-    seriesName: false,
-    seriesTotal: false,
-    publishedDate: false,
-    genres: false,
-    moods: false,
-    tags: false,
-    ageRating: false,
-    contentRating: false,
+  readonly fields = BULK_FIELDS;
+  merge: Partial<Record<BulkFieldName, boolean>> = {categories: true, moods: true, tags: true};
+
+  clearFields: Record<BulkFieldName, boolean> = {
+    authors: false, publisher: false, publishedDate: false, categories: false, moods: false, tags: false,
+    seriesName: false, seriesTotal: false, language: false, ageRating: false, contentRating: false,
   };
 
-  readonly ageRatingOptions = AGE_RATING_OPTIONS.map(({id, label}) => ({label, value: id}));
-  readonly contentRatingOptions = Object.entries(CONTENT_RATING_LABELS)
-    .map(([value, label]) => ({label, value}));
 
   ngOnInit(): void {
     this.bookIds = this.config.data?.bookIds ?? [];
 
-    this.metadataForm = this.fb.group({
-      authors: [],
-      publisher: [''],
-      language: [''],
-      seriesName: [''],
-      seriesTotal: [''],
-      publishedDate: [null],
-      genres: [],
-      moods: [],
-      tags: [],
-      ageRating: [null],
-      contentRating: [null]
-    });
+    this.metadataForm = this.fb.group(Object.fromEntries(BULK_FIELDS.map(field => [field.name, [null]])));
   }
 
-  onFieldClearToggle(field: keyof typeof this.clearFields): void {
+  onFieldClearToggle(field: BulkFieldName): void {
     const control = this.metadataForm.get(field);
     if (!control) return;
 
@@ -159,8 +143,8 @@ export class BulkMetadataUpdateComponent implements OnInit {
         : (formValue.publishedDate ? new Date(formValue.publishedDate).toISOString().split('T')[0] : undefined),
       clearPublishedDate: this.clearFields.publishedDate,
 
-      genres: this.clearFields.genres ? [] : (formValue.genres?.length ? formValue.genres : undefined),
-      clearGenres: this.clearFields.genres,
+      genres: this.clearFields.categories ? [] : (formValue.categories?.length ? formValue.categories : undefined),
+      clearGenres: this.clearFields.categories,
 
       moods: this.clearFields.moods ? [] : (formValue.moods?.length ? formValue.moods : undefined),
       clearMoods: this.clearFields.moods,
@@ -174,9 +158,9 @@ export class BulkMetadataUpdateComponent implements OnInit {
       contentRating: this.clearFields.contentRating ? null : (formValue.contentRating ?? undefined),
       clearContentRating: this.clearFields.contentRating,
 
-      mergeCategories: this.mergeCategories,
-      mergeMoods: this.mergeMoods,
-      mergeTags: this.mergeTags
+      mergeCategories: this.merge.categories === true,
+      mergeMoods: this.merge.moods === true,
+      mergeTags: this.merge.tags === true
     };
 
     this.loading = true;

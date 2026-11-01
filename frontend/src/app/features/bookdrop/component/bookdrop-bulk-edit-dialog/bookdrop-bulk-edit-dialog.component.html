@@ -16,14 +16,26 @@
             [binary]="true"
             [ngModel]="isFieldEnabled(field.name)"
             (ngModelChange)="toggleField(field.name)"
-            [ariaLabel]="t('enableField', { label: field.label })" />
-          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
-          <input
-            pInputText
-            [formControl]="getControl(field.controlName)"
-            [attr.id]="field.controlName"
-            [attr.aria-label]="field.label"
-            class="field-input"/>
+            [ariaLabel]="t('enableField', { label: fieldLabels.label(field.name) })" />
+          <label class="field-label" [attr.for]="field.name">{{ fieldLabels.label(field.name) }}</label>
+          @if (field.suggestions) {
+            <p-autoComplete
+              [formControl]="getControl(field.name)"
+              [inputId]="field.name"
+              [ariaLabel]="fieldLabels.label(field.name)"
+              [fluid]="true"
+              [dropdown]="false"
+              [forceSelection]="false"
+              [appFacetSuggestions]="field.suggestions"
+              class="field-input" />
+          } @else {
+            <input
+              pInputText
+              [formControl]="getControl(field.name)"
+              [attr.id]="field.name"
+              [attr.aria-label]="fieldLabels.label(field.name)"
+              class="field-input"/>
+          }
         </div>
       }
     </div>
@@ -40,14 +52,14 @@
             [binary]="true"
             [ngModel]="isFieldEnabled(field.name)"
             (ngModelChange)="toggleField(field.name)"
-            [ariaLabel]="t('enableField', { label: field.label })" />
-          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
+            [ariaLabel]="t('enableField', { label: fieldLabels.label(field.name) })" />
+          <label class="field-label" [attr.for]="field.name">{{ fieldLabels.label(field.name) }}</label>
           <input
             pInputText
             type="number"
-            [formControl]="getControl(field.controlName)"
-            [attr.id]="field.controlName"
-            [attr.aria-label]="field.label"
+            [formControl]="getControl(field.name)"
+            [attr.id]="field.name"
+            [attr.aria-label]="fieldLabels.label(field.name)"
             class="field-input field-input-small"/>
         </div>
       }
@@ -77,17 +89,17 @@
             [binary]="true"
             [ngModel]="isFieldEnabled(field.name)"
             (ngModelChange)="toggleField(field.name)"
-            [ariaLabel]="t('enableField', { label: field.label })" />
-          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
+            [ariaLabel]="t('enableField', { label: fieldLabels.label(field.name) })" />
+          <label class="field-label" [attr.for]="field.name">{{ fieldLabels.label(field.name) }}</label>
           <p-autoComplete
-            [formControl]="getControl(field.controlName)"
+            [formControl]="getControl(field.name)"
             [multiple]="true"
-            [suggestions]="[]"
+            [appFacetSuggestions]="field.suggestions"
             [forceSelection]="false"
-            [typeahead]="false"
             [dropdown]="false"
-            [ariaLabel]="field.label"
-            (onBlur)="onAutoCompleteBlur(field.name, $event)"
+            [ariaLabel]="fieldLabels.label(field.name)"
+            (onKeyUp)="onAutoCompleteKeyUp(field.name, $event)"
+            (onBlur)="addTypedValue(field.name, $event)"
             class="field-input" />
         </div>
       }

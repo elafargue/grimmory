@@ -65,7 +65,7 @@ export class BookMetadataManageService {
       tap(() => {
         const lockPatch: Record<string, boolean> = {};
         for (const [field, action] of Object.entries(fieldActions)) {
-          lockPatch[field === 'thumbnailLocked' ? 'coverLocked' : field] = action === 'LOCK';
+          lockPatch[field] = action === 'LOCK';
         }
         patchBooksInCacheWith(this.queryClient, Array.from(bookIdSet, bookId => ({
           bookId,

@@ -24,7 +24,7 @@ import {ShelfService} from '../../book/service/shelf.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 import {Textarea} from '@openng/optimus-ui/textarea';
 import {IconSelection, toIconSelection} from '../../../shared/icons/icon-selection';
-import {MetadataProviderFieldsService, providerFieldRecord, type MetadataProviderFieldRole} from '../../../shared/metadata';
+import {MetadataFieldLabelService, MetadataProviderFieldsService, providerFieldRecord, type MetadataProviderFieldRole} from '../../../shared/metadata';
 import type {MetadataProviderFieldName, MetadataProviderScoreFieldName} from '../../../shared/metadata/metadata-providers';
 
 export type RuleOperator =
@@ -246,6 +246,7 @@ export class MagicShelfComponent implements OnInit {
 
   private readonly t = inject(TranslocoService);
   private readonly providerFields = inject(MetadataProviderFieldsService);
+  private readonly fieldLabels = inject(MetadataFieldLabelService);
   private readonly injector = inject(Injector);
   libraryService = inject(LibraryService);
   shelfService = inject(ShelfService);
@@ -290,7 +291,7 @@ export class MagicShelfComponent implements OnInit {
           const config = this.fieldConfigs()[field];
           const translationKey = field === 'categories' ? 'genre' : config.label;
           return {
-            label: config.providerField ? this.providerFields.label(config.providerField) : this.t.translate(`magicShelf.fields.${translationKey}`),
+            label: config.providerField ? this.fieldLabels.label(config.providerField) : this.t.translate(`magicShelf.fields.${translationKey}`),
             value: field
           };
         })
@@ -367,7 +368,7 @@ export class MagicShelfComponent implements OnInit {
   private providerFieldOptions(role: MetadataProviderFieldRole) {
     return this.providerFields.fields()
       .filter(field => field.role === role && field.name !== RULE_UNSUPPORTED_PROVIDER_FIELD)
-      .map(field => ({label: this.providerFields.label(field.name), value: field.name}));
+      .map(field => ({label: this.fieldLabels.label(field.name), value: field.name}));
   }
 
   get metadataPresenceOptions() {

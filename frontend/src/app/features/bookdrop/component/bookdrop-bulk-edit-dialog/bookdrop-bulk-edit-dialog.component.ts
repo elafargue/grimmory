@@ -7,20 +7,15 @@ import {InputText} from '@openng/optimus-ui/inputtext';
 import {AutoComplete} from '@openng/optimus-ui/autocomplete';
 import {Divider} from '@openng/optimus-ui/divider';
 import {SelectButton} from '@openng/optimus-ui/selectbutton';
+import {FacetSuggestionsDirective} from '../../../book/components/facet-suggestions.directive';
 import {BookMetadata} from '../../../book/model/book.model';
 import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
+import {bookFieldsNamed, emptyFormValue, MetadataFieldLabelService, type MetadataFormValue} from '../../../../shared/metadata';
 
 export interface BulkEditResult {
   fields: Partial<BookMetadata>;
   enabledFields: Set<string>;
   mergeArrays: boolean;
-}
-
-interface BulkEditField {
-  name: string;
-  label: string;
-  type: 'text' | 'chips' | 'number';
-  controlName: string;
 }
 
 @Component({
@@ -37,6 +32,7 @@ interface BulkEditField {
     SelectButton,
     TranslocoDirective,
     TranslocoPipe,
+    FacetSuggestionsDirective,
   ],
   templateUrl: './bookdrop-bulk-edit-dialog.component.html',
   styleUrl: './bookdrop-bulk-edit-dialog.component.scss'
@@ -47,39 +43,25 @@ export class BookdropBulkEditDialogComponent implements OnInit {
   private readonly config = inject(DynamicDialogConfig);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly t = inject(TranslocoService);
+  protected readonly fieldLabels = inject(MetadataFieldLabelService);
 
   fileCount: number = 0;
   mergeArrays = true;
 
   enabledFields = new Set<string>();
 
-  bulkEditForm = new FormGroup({
-    seriesName: new FormControl(''),
-    seriesTotal: new FormControl<number | null>(null),
-    authors: new FormControl<string[]>([]),
-    publisher: new FormControl(''),
-    language: new FormControl(''),
-    categories: new FormControl<string[]>([]),
-    moods: new FormControl<string[]>([]),
-    tags: new FormControl<string[]>([]),
-  });
+  private readonly fields = bookFieldsNamed(['authors', 'publisher', 'categories', 'moods', 'tags', 'seriesName', 'seriesTotal', 'language']);
 
-  textFields: BulkEditField[] = [
-    {name: 'seriesName', label: this.t.translate('bookdrop.bulkEdit.seriesName'), type: 'text', controlName: 'seriesName'},
-    {name: 'publisher', label: this.t.translate('bookdrop.bulkEdit.publisher'), type: 'text', controlName: 'publisher'},
-    {name: 'language', label: this.t.translate('bookdrop.bulkEdit.language'), type: 'text', controlName: 'language'},
-  ];
+  bulkEditForm = new FormGroup(Object.fromEntries(this.fields.map(field => [
+    field.name,
+    new FormControl<MetadataFormValue>(emptyFormValue(field.valueType)),
+  ])));
 
-  numberFields: BulkEditField[] = [
-    {name: 'seriesTotal', label: this.t.translate('bookdrop.bulkEdit.seriesTotal'), type: 'number', controlName: 'seriesTotal'},
-  ];
+  textFields = this.fields.filter(field => field.valueType === 'string');
 
-  chipFields: BulkEditField[] = [
-    {name: 'authors', label: this.t.translate('bookdrop.bulkEdit.authors'), type: 'chips', controlName: 'authors'},
-    {name: 'categories', label: this.t.translate('bookdrop.bulkEdit.genres'), type: 'chips', controlName: 'categories'},
-    {name: 'moods', label: this.t.translate('bookdrop.bulkEdit.moods'), type: 'chips', controlName: 'moods'},
-    {name: 'tags', label: this.t.translate('bookdrop.bulkEdit.tags'), type: 'chips', controlName: 'tags'},
-  ];
+  numberFields = this.fields.filter(field => field.valueType === 'number');
+
+  chipFields = this.fields.filter(field => field.valueType === 'array');
 
   mergeOptions = [
     {label: this.t.translate('bookdrop.bulkEdit.mergeOption'), value: true},
@@ -104,7 +86,13 @@ export class BookdropBulkEditDialogComponent implements OnInit {
     });
   }
 
-  onAutoCompleteBlur(fieldName: string, event: Event): void {
+  onAutoCompleteKeyUp(fieldName: string, event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      this.addTypedValue(fieldName, event);
+    }
+  }
+
+  addTypedValue(fieldName: string, event: Event): void {
     const target = event.target as HTMLInputElement;
     const inputValue = target?.value?.trim();
     if (inputValue) {

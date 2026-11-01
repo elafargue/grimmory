@@ -14,9 +14,11 @@ import {
 import {Tooltip} from '@openng/optimus-ui/tooltip';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
-import {MetadataProviderFieldsService} from '../../../../../shared/metadata';
+import {FETCHABLE_FIELDS, MetadataFieldLabelService, MetadataProviderFieldsService} from '../../../../../shared/metadata';
 import type {MetadataProviderId} from '../../../../../shared/metadata/metadata-providers';
 import {MetadataSourceQueryService} from '../../../sources/metadata-source-query.service';
+
+const HARDCOVER_ONLY_FIELDS: readonly (keyof FieldOptions)[] = ['moods', 'tags'];
 
 @Component({
   selector: 'app-metadata-advanced-fetch-options',
@@ -31,6 +33,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
   private readonly t = inject(TranslocoService);
   private readonly sources = inject(MetadataSourceQueryService);
   private readonly providerFields = inject(MetadataProviderFieldsService);
+  private readonly fieldLabels = inject(MetadataFieldLabelService);
   private readonly activeLang = toSignal(this.t.langChanges$, {initialValue: this.t.getActiveLang()});
 
   readonly metadataOptionsSubmitted = output<MetadataRefreshOptions>();
@@ -38,14 +41,13 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
   @Input() submitButtonLabel!: string;
 
   nonProviderSpecificFields: (keyof FieldOptions)[] = [
-    'title', 'subtitle', 'description', 'authors', 'publisher', 'publishedDate',
-    'seriesName', 'seriesNumber', 'seriesTotal', 'isbn13', 'isbn10',
-    'language', 'categories', 'cover', 'pageCount',
+    ...FETCHABLE_FIELDS.map(field => field.name).filter(name => !HARDCOVER_ONLY_FIELDS.includes(name)),
+    'cover',
   ];
 
   readonly providerSpecificFields = computed<(keyof FieldOptions)[]>(() => [
     ...this.providerFields.fields().map(field => field.name),
-    'moods', 'tags',
+    ...HARDCOVER_ONLY_FIELDS,
   ]);
 
   readonly fields = computed<(keyof FieldOptions)[]>(() => [...this.nonProviderSpecificFields, ...this.providerSpecificFields()]);
@@ -229,35 +231,15 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     this.bulkP4 = null;
   }
 
-  formatLabel(field: string): string {
-    const fieldLabels: Record<string, string> = {
-      'title': 'Title',
-      'subtitle': 'Subtitle',
-      'description': 'Description',
-      'authors': 'Authors',
-      'publisher': 'Publisher',
-      'publishedDate': 'Published Date',
-      'seriesName': 'Series Name',
-      'seriesNumber': 'Series Number',
-      'seriesTotal': 'Series Total',
-      'isbn13': 'ISBN-13',
-      'isbn10': 'ISBN-10',
-      'language': 'Language',
-      'categories': 'Genres',
-      'cover': 'Cover Image',
-      'pageCount': 'Page Count',
-      'rating': 'Rating',
-      'reviewCount': 'Review Count',
-      'moods': 'Moods (Hardcover)',
-      'tags': 'Tags (Hardcover)'
-    };
-
-    if (fieldLabels[field]) return fieldLabels[field];
-
-    const providerField = this.providerFields.fields().find(providerField => providerField.name === field);
-    return providerField
-      ? this.providerFields.label(providerField.name)
-      : field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+  formatLabel(field: keyof FieldOptions): string {
+    const label = this.fieldLabels.label(field);
+    if (!HARDCOVER_ONLY_FIELDS.includes(field)) return label;
+    const lang = this.activeLang();
+    const hardcover = this.sources.providers().find(provider => provider.id === 'Hardcover');
+    return this.t.translate<string>('metadata.advancedFetchOptions.fieldFromProvider', {
+      field: label,
+      provider: hardcover ? this.t.translate<string>(hardcover.labelKey, {}, lang) : 'Hardcover',
+    }, lang);
   }
 
   isProviderSpecificField(field: keyof FieldOptions): boolean {

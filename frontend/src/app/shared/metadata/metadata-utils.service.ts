@@ -122,27 +122,4 @@ export class MetadataUtilsService {
       hoveredFields[field] = false;
     }
   }
-
-  patchMetadataToForm(
-    metadata: BookMetadata,
-    metadataForm: FormGroup,
-    fields: { controlName: string; lockedKey: string; type: string }[]
-  ): void {
-    const patchData: Record<string, unknown> = {};
-
-    for (const field of fields) {
-      const key = field.controlName as keyof BookMetadata;
-      const lockedKey = field.lockedKey as keyof BookMetadata;
-      const value = metadata[key];
-
-      if (field.type === 'array') {
-        patchData[field.controlName] = [...(value as string[] ?? [])].sort();
-      } else {
-        patchData[field.controlName] = value ?? null;
-      }
-      patchData[field.lockedKey] = metadata[lockedKey] ?? false;
-    }
-
-    metadataForm.patchValue(patchData);
-  }
 }

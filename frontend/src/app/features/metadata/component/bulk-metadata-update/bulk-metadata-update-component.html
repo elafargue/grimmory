@@ -30,322 +30,107 @@
 
     <form [formGroup]="metadataForm" (ngSubmit)="onSubmit()" (keydown)="onFormKeydown($event)" class="bulk-form">
 
-      <div class="form-row">
-        <!-- Authors -->
-        <div class="field-group field-group--wide">
-          <label for="authors" class="field-label-row">
-            <span class="field-label-text">
-              Author(s)
-              <i class="pi pi-info-circle info-icon"
-                pTooltip="Enter multiple authors. Press Enter after typing each name."
-                tooltipPosition="right"
-                style="cursor: pointer"></i>
-            </span>
-            <div class="clear-checkbox">
-              <p-checkbox [(ngModel)]="clearFields.authors" [ngModelOptions]="{standalone: true}" (onChange)="onFieldClearToggle('authors')" binary="true" inputId="clearAuthors"/>
-              <label for="clearAuthors" class="clear-label">Clear</label>
+      <div class="field-list">
+        @for (field of fields; track field.name) {
+          <div class="field-group" [attr.data-field]="field.name">
+            <div class="field-label-row">
+              <label [for]="field.name" class="field-label-text">
+                {{ fieldLabels.label(field.name) }}
+                @if (field.valueType === 'array') {
+                  <i class="pi pi-info-circle info-icon"
+                     pTooltip="Enter multiple values. Press Enter after each one."
+                     tooltipPosition="right"
+                     style="cursor: pointer"></i>
+                } @else if (field.name === 'seriesTotal') {
+                  <i class="pi pi-info-circle info-icon"
+                     pTooltip="Total number of books in the series."
+                     tooltipPosition="right"
+                     style="cursor: pointer"></i>
+                }
+              </label>
+              <div class="clear-checkbox">
+                <p-checkbox [(ngModel)]="clearFields[field.name]" [ngModelOptions]="{standalone: true}"
+                            (onChange)="onFieldClearToggle(field.name)" binary="true" [inputId]="'clear-' + field.name"/>
+                <label [for]="'clear-' + field.name" class="clear-label">Clear</label>
+              </div>
             </div>
-          </label>
-          <p-autoComplete
-            class="full-width"
-            id="authors"
-            formControlName="authors"
-            [disabled]="clearFields.authors"
-            [multiple]="true"
-            [dropdown]="false"
-            [forceSelection]="false"
-            appFacetSuggestions="author"
-            (onKeyUp)="onAutoCompleteKeyUp('authors', $event)"
-            (onSelect)="onAutoCompleteSelect('authors', $event)" />
-        </div>
-
-        <!-- Language -->
-        <div class="field-group field-group--narrow">
-          <label for="language" class="field-label-row">
-            <span>Language</span>
-            <div class="clear-checkbox">
-              <p-checkbox [(ngModel)]="clearFields.language" [ngModelOptions]="{standalone: true}"
-                          (onChange)="onFieldClearToggle('language')" binary="true" inputId="clearLanguage"/>
-              <label for="clearLanguage" class="clear-label">Clear</label>
-            </div>
-          </label>
-          <input pInputText id="language" formControlName="language" [disabled]="clearFields.language" class="full-width"/>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <!-- Publisher -->
-        <div class="field-group field-group--wide">
-          <label for="publisher" class="field-label-row">
-            <span>Publisher</span>
-            <div class="clear-checkbox">
-              <p-checkbox [(ngModel)]="clearFields.publisher" [ngModelOptions]="{standalone: true}"
-                          (onChange)="onFieldClearToggle('publisher')" binary="true" inputId="clearPublisher"/>
-              <label for="clearPublisher" class="clear-label">Clear</label>
-            </div>
-          </label>
-          <p-autoComplete
-            class="full-width"
-            inputStyleClass="full-width"
-            formControlName="publisher"
-            inputId="publisher"
-            [disabled]="clearFields.publisher"
-            [multiple]="false"
-            [dropdown]="false"
-            [showClear]="true"
-            [forceSelection]="false"
-            appFacetSuggestions="publisher" />
-        </div>
-
-        <!-- Published Date -->
-        <div class="field-group field-group--narrow">
-          <label for="publishedDate" class="field-label-row">
-            <span>Published Date</span>
-            <div class="clear-checkbox">
-              <p-checkbox [(ngModel)]="clearFields.publishedDate" [ngModelOptions]="{standalone: true}"
-                          (onChange)="onFieldClearToggle('publishedDate')" binary="true" inputId="clearPublishedDate"/>
-              <label for="clearPublishedDate" class="clear-label">Clear</label>
-            </div>
-          </label>
-          <p-datepicker
-            class="full-width datepicker-min-width"
-            formControlName="publishedDate"
-            inputId="publishedDate"
-            dataType="string"
-            dateFormat="yy-mm-dd"
-            [disabled]="clearFields.publishedDate"
-            [keepInvalid]="true"
-            [showIcon]="true"
-            [iconDisplay]="'input'"
-            fluid="true"
-            appendTo="body" />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <!-- Series Name -->
-        <div class="field-group field-group--wide">
-          <label for="seriesName" class="field-label-row">
-            <span>Series Name</span>
-            <div class="clear-checkbox">
-              <p-checkbox [(ngModel)]="clearFields.seriesName" [ngModelOptions]="{standalone: true}"
-                          (onChange)="onFieldClearToggle('seriesName')" binary="true" inputId="clearSeriesName"/>
-              <label for="clearSeriesName" class="clear-label">Clear</label>
-            </div>
-          </label>
-          <p-autoComplete
-            class="full-width"
-            inputStyleClass="full-width"
-            formControlName="seriesName"
-            inputId="seriesName"
-            [disabled]="clearFields.seriesName"
-            [multiple]="false"
-            [dropdown]="false"
-            [showClear]="true"
-            [forceSelection]="false"
-            appFacetSuggestions="series" />
-        </div>
-
-        <!-- Series Total -->
-        <div class="field-group field-group--narrow">
-          <label for="seriesTotal" class="field-label-row">
-            <span class="field-label-text">
-              Total Books
-              <i class="pi pi-info-circle info-icon"
-                pTooltip="Total number of books in the series."
-                tooltipPosition="right"
-                style="cursor: pointer"></i>
-            </span>
-            <div class="clear-checkbox">
-              <p-checkbox [(ngModel)]="clearFields.seriesTotal" [ngModelOptions]="{standalone: true}"
-                          (onChange)="onFieldClearToggle('seriesTotal')" binary="true" inputId="clearSeriesTotal"/>
-              <label for="clearSeriesTotal" class="clear-label">Clear</label>
-            </div>
-          </label>
-          <input pInputText id="seriesTotal" type="number" min="1" formControlName="seriesTotal"
-                 [disabled]="clearFields.seriesTotal" class="full-width"/>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <!-- Age Rating -->
-        <div class="field-group field-group--half">
-          <label for="ageRating" class="field-label-row">
-            <span>Age Rating</span>
-            <div class="clear-checkbox">
-              <p-checkbox [(ngModel)]="clearFields.ageRating" [ngModelOptions]="{standalone: true}"
-                          (onChange)="onFieldClearToggle('ageRating')" binary="true" inputId="clearAgeRating"/>
-              <label for="clearAgeRating" class="clear-label">Clear</label>
-            </div>
-          </label>
-          <p-select
-            class="full-width"
-            inputId="ageRating"
-            formControlName="ageRating"
-            [options]="ageRatingOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Leave unchanged"
-            [showClear]="true"
-            [disabled]="clearFields.ageRating"
-            appendTo="body"/>
-        </div>
-
-        <!-- Content Rating -->
-        <div class="field-group field-group--half">
-          <label for="contentRating" class="field-label-row">
-            <span>Content Rating</span>
-            <div class="clear-checkbox">
-              <p-checkbox [(ngModel)]="clearFields.contentRating" [ngModelOptions]="{standalone: true}"
-                          (onChange)="onFieldClearToggle('contentRating')" binary="true" inputId="clearContentRating"/>
-              <label for="clearContentRating" class="clear-label">Clear</label>
-            </div>
-          </label>
-          <p-select
-            class="full-width"
-            inputId="contentRating"
-            formControlName="contentRating"
-            [options]="contentRatingOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Leave unchanged"
-            [showClear]="true"
-            [disabled]="clearFields.contentRating"
-            appendTo="body"/>
-        </div>
-      </div>
-
-      <!-- Genres -->
-      <div class="field-group">
-        <label for="genres" class="field-label-row">
-          <span class="field-label-text">
-            Genre(s)
-            <i class="pi pi-info-circle info-icon"
-               pTooltip="Enter multiple genres. Press Enter after typing each genre."
-               tooltipPosition="right"
-               style="cursor: pointer"></i>
-          </span>
-          <div class="clear-checkbox">
-            <p-checkbox [(ngModel)]="clearFields.genres" [ngModelOptions]="{standalone: true}"
-                        (onChange)="onFieldClearToggle('genres')" binary="true" inputId="clearGenres"/>
-            <label for="clearGenres" class="clear-label">Clear</label>
+            @if (fieldLabels.options()[field.name]; as options) {
+              <p-select
+                class="full-width"
+                [inputId]="field.name"
+                [formControlName]="field.name"
+                [options]="options"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Leave unchanged"
+                [showClear]="true"
+                [disabled]="clearFields[field.name]"
+                appendTo="body"/>
+            } @else if (field.valueType === 'array') {
+              <p-autoComplete
+                class="full-width"
+                [inputId]="field.name"
+                [formControlName]="field.name"
+                [disabled]="clearFields[field.name]"
+                [multiple]="true"
+                [dropdown]="false"
+                [forceSelection]="false"
+                [appFacetSuggestions]="field.suggestions"
+                (onKeyUp)="onAutoCompleteKeyUp(field.name, $event)"
+                (onSelect)="onAutoCompleteSelect(field.name, $event)" />
+              @if (merge[field.name] !== undefined) {
+                <div class="merge-option">
+                  <p-checkbox
+                    [inputId]="'merge-' + field.name"
+                    [(ngModel)]="merge[field.name]"
+                    [ngModelOptions]="{ standalone: true }"
+                    binary="true"
+                  />
+                  <label [for]="'merge-' + field.name" class="clear-label">
+                    Keep existing entries and add new ones (uncheck to remove all existing entries)
+                  </label>
+                </div>
+              }
+            } @else if (field.valueType === 'date') {
+              <p-datepicker
+                class="full-width datepicker-min-width"
+                [formControlName]="field.name"
+                [inputId]="field.name"
+                dataType="string"
+                dateFormat="yy-mm-dd"
+                [disabled]="clearFields[field.name]"
+                [keepInvalid]="true"
+                [showIcon]="true"
+                [iconDisplay]="'input'"
+                fluid="true"
+                appendTo="body" />
+            } @else if (field.valueType === 'number') {
+              <input pInputText [id]="field.name" type="number" min="1" [formControlName]="field.name"
+                     [disabled]="clearFields[field.name]" class="full-width"/>
+            } @else if (field.suggestions) {
+              <p-autoComplete
+                class="full-width"
+                [fluid]="true"
+                [formControlName]="field.name"
+                [inputId]="field.name"
+                [disabled]="clearFields[field.name]"
+                [multiple]="false"
+                [dropdown]="false"
+                [showClear]="true"
+                [forceSelection]="false"
+                [appFacetSuggestions]="field.suggestions" />
+            } @else {
+              <input pInputText [id]="field.name" [formControlName]="field.name" [disabled]="clearFields[field.name]" class="full-width"/>
+            }
           </div>
-        </label>
-        <p-autoComplete
-          class="full-width"
-          id="genres"
-          formControlName="genres"
-          [disabled]="clearFields.genres"
-          [multiple]="true"
-          [dropdown]="false"
-          [forceSelection]="false"
-          appFacetSuggestions="genre"
-          (onKeyUp)="onAutoCompleteKeyUp('genres', $event)"
-          (onSelect)="onAutoCompleteSelect('genres', $event)" />
-
-        <div class="merge-option">
-          <p-checkbox
-            inputId="mergeCategories"
-            name="mergeCategories"
-            [(ngModel)]="mergeCategories"
-            [ngModelOptions]="{ standalone: true }"
-            binary="true"
-          />
-          <label for="mergeCategories" class="clear-label">
-            Keep existing genres and add new ones (uncheck to remove all existing genres)
-          </label>
-        </div>
-      </div>
-
-      <!-- Moods -->
-      <div class="field-group">
-        <label for="moods" class="field-label-row">
-          <span class="field-label-text">
-            Mood(s)
-            <i class="pi pi-info-circle info-icon"
-               pTooltip="Enter multiple moods. Press Enter after typing each mood."
-               tooltipPosition="right"
-               style="cursor: pointer"></i>
-          </span>
-          <div class="clear-checkbox">
-            <p-checkbox [(ngModel)]="clearFields.moods" [ngModelOptions]="{standalone: true}"
-                        (onChange)="onFieldClearToggle('moods')" binary="true" inputId="clearMoods"/>
-            <label for="clearMoods" class="clear-label">Clear</label>
-          </div>
-        </label>
-        <p-autoComplete
-          class="full-width"
-          id="moods"
-          formControlName="moods"
-          [disabled]="clearFields.moods"
-          [multiple]="true"
-          [dropdown]="false"
-          [forceSelection]="false"
-          appFacetSuggestions="mood"
-          (onKeyUp)="onAutoCompleteKeyUp('moods', $event)"
-          (onSelect)="onAutoCompleteSelect('moods', $event)" />
-
-        <div class="merge-option">
-          <p-checkbox
-            inputId="mergeMoods"
-            name="mergeMoods"
-            [(ngModel)]="mergeMoods"
-            [ngModelOptions]="{ standalone: true }"
-            binary="true"
-          />
-          <label for="mergeMoods" class="clear-label">
-            Keep existing moods and add new ones (uncheck to remove all existing moods)
-          </label>
-        </div>
-      </div>
-
-      <!-- Tags -->
-      <div class="field-group">
-        <label for="tags" class="field-label-row">
-          <span class="field-label-text">
-            Tag(s)
-            <i class="pi pi-info-circle info-icon"
-               pTooltip="Enter multiple tags. Press Enter after typing each tag."
-               tooltipPosition="right"
-               style="cursor: pointer"></i>
-          </span>
-          <div class="clear-checkbox">
-            <p-checkbox [(ngModel)]="clearFields.tags" [ngModelOptions]="{standalone: true}"
-                        (onChange)="onFieldClearToggle('tags')" binary="true" inputId="clearTags"/>
-            <label for="clearTags" class="clear-label">Clear</label>
-          </div>
-        </label>
-        <p-autoComplete
-          class="full-width"
-          id="tags"
-          formControlName="tags"
-          [disabled]="clearFields.tags"
-          [multiple]="true"
-          [dropdown]="false"
-          [forceSelection]="false"
-          appFacetSuggestions="tag"
-          (onKeyUp)="onAutoCompleteKeyUp('tags', $event)"
-          (onSelect)="onAutoCompleteSelect('tags', $event)" />
-
-        <div class="merge-option">
-          <p-checkbox
-            inputId="mergeTags"
-            name="mergeTags"
-            [(ngModel)]="mergeTags"
-            [ngModelOptions]="{ standalone: true }"
-            binary="true"
-          />
-          <label for="mergeTags" class="clear-label">
-            Keep existing tags and add new ones (uncheck to remove all existing tags)
-          </label>
-        </div>
+        }
       </div>
 
       <!-- Cover Image Upload Section -->
       <div class="cover-section">
         <span class="cover-label">
           <i class="pi pi-image"></i>
-          Cover Image
+          {{ fieldLabels.label('cover') }}
         </span>
         <p class="cover-description">
           Upload an image to set as the cover for all selected books.
